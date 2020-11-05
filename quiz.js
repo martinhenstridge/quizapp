@@ -25,25 +25,24 @@ Quiz.prototype.update = function (evt) {
     console.debug(`event: ${JSON.stringify(evt)}`);
 
     const question = this.questions.get(evt.number);
-    const updated = update_question(question, evt);
+    const updated = update_question(this, evt.number, question, evt);
     this.questions.set(evt.number, updated);
 
-    let node;
-    if (typeof question !== "undefined") {
-        node = get_question_node(evt.number);
-    } else {
-        node = new_question_node(evt.number);
-        this.node.appendChild(node);
+    updated.set_node();
+    if (typeof question === "undefined") {
+        this.node.appendChild(updated.node);
     }
-    set_question_node(node, updated);
 };
 
 
-function Question(state, text, guess, answer, domnode) {
+function Question(quiz, number, state, text, guess, answer, node) {
+    this.quiz = quiz;
+    this.number = number;
     this.state = state;
     this.text = text;
     this.guess = guess;
     this.answer = answer;
+    this.node = (typeof node === "undefined") ? new_node(quiz, number) : node;
     Object.freeze(this);
 }
 
@@ -52,20 +51,49 @@ Question.prototype.toString = function () {
 };
 
 Question.prototype.set_state = function (state) {
-    return new Question(state, this.text, this.guess, this.answer)
+    return new Question(
+        this.quiz, this.number, state, this.text, this.guess, this.answer, this.node,
+    );
 };
 
 Question.prototype.set_text = function (text) {
-    return new Question(this.state, text, this.guess, this.answer)
+    return new Question(
+        this.quiz, this.number, this.state, text, this.guess, this.answer, this.node,
+    );
 };
 
 Question.prototype.set_guess = function (guess) {
-    return new Question(this.state, this.text, guess, this.answer)
+    return new Question(
+        this.quiz, this.number, this.state, this.text, guess, this.answer, this.node,
+    );
 };
 
 Question.prototype.set_answer = function (answer) {
-    return new Question(this.state, this.text, this.guess, answer)
+    return new Question(
+        this.quiz, this.number, this.state, this.text, this.guess, answer, this.node,
+    );
 };
+
+Question.prototype.set_node = function () {
+    const text = this.node.querySelector(".question_text");
+    const guess = this.node.querySelector(".question_guess");
+    const answer = this.node.querySelector(".question_answer");
+
+    text.innerText = this.text;
+
+    if (this.state !== STATE_FLUX) {
+        guess.value = this.guess;
+        guess.disabled = (this.state === STATE_LOCKED);
+    }
+
+    if (this.answer === null) {
+        answer.hidden = true;
+        answer.innerText = "";
+    } else {
+        answer.hidden = false;
+        answer.innerText = this.answer;
+    }
+}
 
 
 function h(tag, props, children) {
@@ -80,7 +108,7 @@ function h(tag, props, children) {
 }
 
 
-function new_question_node(number) {
+function new_node(quiz, number) {
     const node_number = h("span", {
         className: "question_number",
         innerText: `[Q${number}] `
@@ -111,7 +139,7 @@ function new_question_node(number) {
         e.stopPropagation()
     });
 
-    return h("div", { id: `Q${number}`, className: "question" }, [
+    return h("div", { className: "question" }, [
         h("div", {}, [node_number, node_text]),
         h("div", {}, [node_guess]),
         h("div", {}, [node_answer]),
@@ -119,37 +147,10 @@ function new_question_node(number) {
 }
 
 
-function get_question_node(number) {
-    return document.querySelector(`div#Q${number}`);
-}
-
-
-function set_question_node(node, updated) {
-    let text = node.querySelector(".question_text");
-    let guess = node.querySelector(".question_guess");
-    let answer = node.querySelector(".question_answer");
-
-    text.innerText = updated.text;
-
-    if (updated.state !== STATE_FLUX) {
-        guess.value = updated.guess;
-        guess.disabled = (updated.state === STATE_LOCKED);
-    }
-
-    if (updated.answer === null) {
-        answer.hidden = true;
-        answer.innerText = "";
-    } else {
-        answer.hidden = false;
-        answer.innerText = updated.answer;
-    }
-}
-
-
-function update_question(question, data) {
+function update_question(quiz, number, question, data) {
     switch (data.type) {
         case EVENT_ASK:
-            return post_event_ask(question, data);
+            return post_event_ask(quiz, number, question, data);
 
         case EVENT_EDIT_START:
             return post_event_edit_start(question, data);
@@ -172,12 +173,12 @@ function update_question(question, data) {
 }
 
 
-function post_event_ask(question, data) {
+function post_event_ask(quiz, number, question, data) {
     if (typeof question !== "undefined") {
         throw "Duplicate question";
     }
 
-    return new Question(STATE_OPEN, data.text, null, null);
+    return new Question(quiz, number, STATE_OPEN, data.text, null, null);
 }
 
 
