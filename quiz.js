@@ -21,60 +21,69 @@ function Quiz(selector) {
     Object.freeze(this);
 };
 
-Quiz.prototype.update = function (evt) {
+Quiz.prototype.post = function (evt) {
     console.debug(`event: ${JSON.stringify(evt)}`);
 
-    const question = this.questions.get(evt.number);
-    const updated = update_question(this, evt.number, question, evt);
-    this.questions.set(evt.number, updated);
-
-    updated.set_node();
-    if (typeof question === "undefined") {
-        this.node.appendChild(updated.node);
+    let question;
+    if (this.questions.has(evt.number)) {
+        question = this.questions.get(evt.number);
+    } else {
+        question = new Question(this, evt.number);
+        this.questions.set(evt.number, question);
     }
+
+    question.post(evt);
+    question.update_dom();
 };
 
 
-function Question(quiz, number, state, text, guess, answer, node) {
+function Question(quiz, number) {
     this.quiz = quiz;
     this.number = number;
-    this.state = state;
-    this.text = text;
-    this.guess = guess;
-    this.answer = answer;
-    this.node = (typeof node === "undefined") ? new_node(quiz, number) : node;
-    Object.freeze(this);
+    this.state = STATE_LOCKED;
+    this.text = "";
+    this.guess = null;
+    this.answer = null;
+    this.node = new_node(quiz, number);
+    quiz.node.appendChild(this.node);
 }
 
 Question.prototype.toString = function () {
     return `Question(${this.state}, ${this.text}, ${this.guess}, ${this.answer})`;
 };
 
-Question.prototype.set_state = function (state) {
-    return new Question(
-        this.quiz, this.number, state, this.text, this.guess, this.answer, this.node,
-    );
-};
+Question.prototype.post = function (data) {
+    switch (data.type) {
+        case EVENT_ASK:
+            post_event_ask(this, data);
+            break;
 
-Question.prototype.set_text = function (text) {
-    return new Question(
-        this.quiz, this.number, this.state, text, this.guess, this.answer, this.node,
-    );
-};
+        case EVENT_EDIT_START:
+            post_event_edit_start(this, data);
+            break;
 
-Question.prototype.set_guess = function (guess) {
-    return new Question(
-        this.quiz, this.number, this.state, this.text, guess, this.answer, this.node,
-    );
-};
+        case EVENT_EDIT_COMPLETE:
+            post_event_edit_complete(this, data);
+            break;
 
-Question.prototype.set_answer = function (answer) {
-    return new Question(
-        this.quiz, this.number, this.state, this.text, this.guess, answer, this.node,
-    );
-};
+        case EVENT_REMOTE_UPDATE:
+            post_event_remote_update(this, data);
+            break;
 
-Question.prototype.set_node = function () {
+        case EVENT_LOCK:
+            post_event_lock(this, data);
+            break;
+
+        case EVENT_REVEAL:
+            post_event_reveal(this, data);
+            break;
+
+        default:
+            throw `Unknown event type: ${data.type}`;
+    }
+}
+
+Question.prototype.update_dom = function () {
     const text = this.node.querySelector(".question_text");
     const guess = this.node.querySelector(".question_guess");
     const answer = this.node.querySelector(".question_answer");
@@ -124,14 +133,14 @@ function new_node(quiz, number) {
     }, []);
 
     node_guess.addEventListener("focusin", function (e) {
-        quiz.update({
+        quiz.post({
             number: number,
             type: EVENT_EDIT_START,
         });
         e.stopPropagation()
     });
     node_guess.addEventListener("focusout", function (e) {
-        quiz.update({
+        quiz.post({
             number: number,
             type: EVENT_EDIT_COMPLETE,
             guess: e.target.value,
@@ -147,49 +156,17 @@ function new_node(quiz, number) {
 }
 
 
-function update_question(quiz, number, question, data) {
-    switch (data.type) {
-        case EVENT_ASK:
-            return post_event_ask(quiz, number, question, data);
-
-        case EVENT_EDIT_START:
-            return post_event_edit_start(question, data);
-
-        case EVENT_EDIT_COMPLETE:
-            return post_event_edit_complete(question, data);
-
-        case EVENT_REMOTE_UPDATE:
-            return post_event_remote_update(question, data);
-
-        case EVENT_LOCK:
-            return post_event_lock(question, data);
-
-        case EVENT_REVEAL:
-            return post_event_reveal(question, data);
-
-        default:
-            throw `Unknown event type: ${data.type}`;
-    }
-}
-
-
-function post_event_ask(quiz, number, question, data) {
-    if (typeof question !== "undefined") {
-        throw "Duplicate question";
-    }
-
-    return new Question(quiz, number, STATE_OPEN, data.text, null, null);
+function post_event_ask(question, data) {
+    question.state = STATE_OPEN;
+    question.text = data.text;
 }
 
 
 function post_event_edit_start(question, data) {
-    if (typeof question === "undefined") {
-        throw "Non-existent question";
-    }
-
     switch (question.state) {
         case STATE_OPEN:
-            return question.set_state(STATE_FLUX);
+            question.state = STATE_FLUX;
+            break;
 
         case STATE_FLUX:
             throw "Edit already in progress";
@@ -204,13 +181,11 @@ function post_event_edit_start(question, data) {
 
 
 function post_event_edit_complete(question, data) {
-    if (typeof question === "undefined") {
-        throw "Non-existent question";
-    }
-
     switch (question.state) {
         case STATE_FLUX:
-            return question.set_state(STATE_OPEN).set_guess(data.guess);
+            question.state = STATE_OPEN;
+            question.guess = data.guess;
+            break;
 
         case STATE_OPEN:
             throw "No edit in progress";
@@ -226,17 +201,14 @@ function post_event_edit_complete(question, data) {
 
 
 function post_event_remote_update(question, data) {
-    if (typeof question === "undefined") {
-        throw "Non-existent question";
-    }
-
     switch (question.state) {
         case STATE_OPEN:
-            return question.set_guess(data.guess);
+            question.guess = data.guess;
+            break;
 
         case STATE_FLUX:
             console.debug("Local edit in progress, ignoring");
-            return question;
+            break;
 
         case STATE_LOCKED:
             throw "Question is locked";
@@ -248,14 +220,11 @@ function post_event_remote_update(question, data) {
 
 
 function post_event_lock(question, data) {
-    if (typeof question === "undefined") {
-        throw "Non-existent question";
-    }
-
     switch (question.state) {
         case STATE_OPEN:
         case STATE_FLUX:
-            return question.set_state(STATE_LOCKED);
+            question.state = STATE_LOCKED;
+            break;
 
         case STATE_LOCKED:
             throw "Duplicate lock";
@@ -267,13 +236,10 @@ function post_event_lock(question, data) {
 
 
 function post_event_reveal(question, data) {
-    if (typeof question === "undefined") {
-        throw "Non-existent question";
-    }
-
     switch (question.state) {
         case STATE_LOCKED:
-            return question.set_answer(data.answer);
+            question.answer = data.answer;
+            break;
 
         case STATE_OPEN:
         case STATE_FLUX:
@@ -289,7 +255,9 @@ let events = [
     { number: 1, type: EVENT_ASK, text: "What is 1+1?" },
     { number: 2, type: EVENT_ASK, text: "What is 2+2?" },
     { number: 1, type: EVENT_REMOTE_UPDATE, guess: "1" },
+    { number: 1, type: EVENT_REMOTE_UPDATE, guess: "2" },
     { number: 3, type: EVENT_ASK, text: "What is 3+3?" },
+    { number: 3, type: EVENT_REMOTE_UPDATE, guess: "6" },
     { number: 4, type: EVENT_ASK, text: "What is 4+4?" },
     { number: 5, type: EVENT_ASK, text: "What is 5+5?" },
     { number: 1, type: EVENT_LOCK },
@@ -308,7 +276,7 @@ let quiz = new Quiz("div#quiz");
 for (let i = 0; i < events.length; i++) {
     setTimeout(() => {
         try {
-            quiz.update(events[i]);
+            quiz.post(events[i]);
         } catch (err) {
             console.error(err);
         }
