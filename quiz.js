@@ -32,9 +32,49 @@ Quiz.prototype.post = function (evt) {
         this.questions.set(evt.number, question);
     }
 
+    console.log(`>>> before: ${question}`);
     question.post(evt);
+    console.log(`>>> after: ${question}`);
     question.update_dom();
 };
+
+Quiz.prototype.push_update = function (evt) {
+    console.log("Pushing update to server")
+
+    const url = "";
+    const request = {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json",
+        },
+        credentials: "same-origin",
+        mode: "same-origin",
+        body: JSON.stringify(evt),
+    };
+
+    fetch(url, request).then(_status).then(_json).then(evts => {
+        for (let evt of evts) {
+            this.post(evt);
+        }
+    });
+};
+
+Quiz.prototype.pull_updates = function () {
+    console.log("Pulling updates from server")
+
+    const url = `/events/${COUNTER}.json`;
+    const request = {
+        method: "GET",
+        credentials: "same-origin",
+        mode: "same-origin",
+    };
+
+    fetch(url, request).then(_status).then(_json).then(evts => {
+        for (let evt of evts) {
+            this.post(evt);
+        }
+    });
+}
 
 
 function Question(quiz, number) {
@@ -42,14 +82,15 @@ function Question(quiz, number) {
     this.number = number;
     this.state = STATE_LOCKED;
     this.text = "";
-    this.guess = null;
+    this.guess = "";
     this.answer = null;
     this.node = new_node(quiz, number);
     quiz.node.appendChild(this.node);
+    Object.seal(this);
 }
 
 Question.prototype.toString = function () {
-    return `Question(${this.state}, ${this.text}, ${this.guess}, ${this.answer})`;
+    return `Q(${this.number}:${this.state},${this.text},${this.guess},${this.answer})`;
 };
 
 Question.prototype.post = function (data) {
@@ -140,11 +181,13 @@ function new_node(quiz, number) {
         e.stopPropagation()
     });
     node_guess.addEventListener("focusout", function (e) {
-        quiz.post({
+        const evt = {
             number: number,
             type: EVENT_EDIT_COMPLETE,
             guess: e.target.value,
-        });
+        };
+        quiz.post(evt);
+        setTimeout(() => quiz.push_update(evt), 0);
         e.stopPropagation()
     });
 
@@ -195,7 +238,6 @@ function post_event_edit_complete(question, data) {
 
         default:
             throw `Unknown state: ${question.state}`;
-
     }
 }
 
@@ -251,34 +293,39 @@ function post_event_reveal(question, data) {
 }
 
 
-let events = [
-    { number: 1, type: EVENT_ASK, text: "What is 1+1?" },
-    { number: 2, type: EVENT_ASK, text: "What is 2+2?" },
-    { number: 1, type: EVENT_REMOTE_UPDATE, guess: "1" },
-    { number: 1, type: EVENT_REMOTE_UPDATE, guess: "2" },
-    { number: 3, type: EVENT_ASK, text: "What is 3+3?" },
-    { number: 3, type: EVENT_REMOTE_UPDATE, guess: "6" },
-    { number: 4, type: EVENT_ASK, text: "What is 4+4?" },
-    { number: 5, type: EVENT_ASK, text: "What is 5+5?" },
-    { number: 1, type: EVENT_LOCK },
-    { number: 2, type: EVENT_LOCK },
-    { number: 3, type: EVENT_LOCK },
-    { number: 4, type: EVENT_LOCK },
-    { number: 5, type: EVENT_LOCK },
-    { number: 1, type: EVENT_REVEAL, answer: "2" },
-    { number: 2, type: EVENT_REVEAL, answer: "4" },
-    { number: 3, type: EVENT_REVEAL, answer: "6" },
-    { number: 4, type: EVENT_REVEAL, answer: "8" },
-    { number: 5, type: EVENT_REVEAL, answer: "10" },
-]
-
-let quiz = new Quiz("div#quiz");
-for (let i = 0; i < events.length; i++) {
-    setTimeout(() => {
-        try {
-            quiz.post(events[i]);
-        } catch (err) {
-            console.error(err);
-        }
-    }, i * 1000);
+function _status(msg) {
+    if (msg.status >= 200 && msg.status < 300) {
+        return Promise.resolve(msg);
+    } else {
+        console.log(msg);
+        return Promise.reject(new Error(msg.statusText));
+    }
 }
+
+
+function _json(msg) {
+    return msg.json()
+}
+
+
+function process_incoming_events(quiz, evts) {
+    for (let evt of evts) {
+        quiz.post(evt);
+    }
+}
+
+let COUNTER = 1;
+function main() {
+    let quiz = new Quiz("div#quiz");
+    setTimeout(function _check() {
+        quiz.pull_updates();
+        COUNTER += 1;
+        if (COUNTER == 12) {
+            return;
+        }
+        setTimeout(_check, 1000);
+    }, 1000);
+}
+
+// python3 -m http.server 8080 --bind 127.0.0.1 --directory /Users/martinhenstridge/quiz
+main();
