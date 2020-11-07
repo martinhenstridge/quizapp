@@ -14,6 +14,38 @@ const EVENT_REMOTE_UPDATE = 4;
 const EVENT_LOCK          = 5;
 const EVENT_REVEAL        = 6;
 
+function str_state(state) {
+    switch (state) {
+        case STATE_OPEN:
+            return "OPEN";
+        case STATE_FLUX:
+            return "FLUX";
+        case STATE_LOCKED:
+            return "LOCKED";
+        default:
+            return "?";
+    }
+}
+
+function str_event(evt) {
+    switch (evt) {
+        case EVENT_ASK:
+            return "ASK";
+        case EVENT_EDIT_START:
+            return "EDIT_START";
+        case EVENT_EDIT_COMPLETE:
+            return "EDIT_COMPLETE";
+        case EVENT_REMOTE_UPDATE:
+             return "REMOTE_UPDATE";
+        case EVENT_LOCK:
+            return "LOCK";
+        case EVENT_REVEAL:
+            return "REVEAL";
+        default:
+            return "?";
+    }
+}
+
 
 function Quiz(selector) {
     this.node = document.querySelector(selector);
@@ -22,7 +54,7 @@ function Quiz(selector) {
 };
 
 Quiz.prototype.post = function (evt) {
-    console.debug(`event: ${JSON.stringify(evt)}`);
+    console.debug(`event: ${str_event(evt.type)}${JSON.stringify(evt)}`);
 
     let question;
     if (this.questions.has(evt.number)) {
@@ -32,9 +64,7 @@ Quiz.prototype.post = function (evt) {
         this.questions.set(evt.number, question);
     }
 
-    console.log(`>>> before: ${question}`);
     question.post(evt);
-    console.log(`>>> after: ${question}`);
     question.update_dom();
 };
 
@@ -62,7 +92,7 @@ Quiz.prototype.push_update = function (evt) {
 Quiz.prototype.pull_updates = function () {
     console.log("Pulling updates from server")
 
-    const url = `/events/${COUNTER}.json`;
+    const url = `/events/${COUNTER}.json?${new Date()}`;
     const request = {
         method: "GET",
         credentials: "same-origin",
@@ -90,7 +120,7 @@ function Question(quiz, number) {
 }
 
 Question.prototype.toString = function () {
-    return `Q(${this.number}:${this.state},${this.text},${this.guess},${this.answer})`;
+    return `Q${this.number}(${str_state(this.state)},${this.text},${this.guess},${this.answer})`;
 };
 
 Question.prototype.post = function (data) {
@@ -146,56 +176,28 @@ Question.prototype.update_dom = function () {
 }
 
 
-function h(tag, props, children) {
-    let elem = document.createElement(tag);
-    for (let [k, v] of Object.entries(props)) {
-        elem[k] = v;
-    }
-    for (let child of children) {
-        elem.appendChild(child)
-    }
-    return elem;
-}
-
-
 function new_node(quiz, number) {
-    const node_number = h("span", {
-        className: "question_number",
-        innerText: `[Q${number}] `
-    }, []);
-    const node_text = h("span", {
-        className: "question_text"
-    }, []);
-    const node_guess = h("input", {
-        className: "question_guess"
-    }, []);
-    const node_answer = h("p", {
-        className: "question_answer"
-    }, []);
+    const template = document.getElementById("template_question");
+    const clone = template.content.firstElementChild.cloneNode(true);
+    const input = clone.querySelector("input");
 
-    node_guess.addEventListener("focusin", function (e) {
+    input.addEventListener("focusin", function (e) {
         quiz.post({
             number: number,
             type: EVENT_EDIT_START,
         });
         e.stopPropagation()
     });
-    node_guess.addEventListener("focusout", function (e) {
-        const evt = {
+    input.addEventListener("focusout", function (e) {
+        quiz.post({
             number: number,
             type: EVENT_EDIT_COMPLETE,
-            guess: e.target.value,
-        };
-        quiz.post(evt);
-        setTimeout(() => quiz.push_update(evt), 0);
+            guess: input.value,
+        });
         e.stopPropagation()
     });
 
-    return h("div", { className: "question" }, [
-        h("div", {}, [node_number, node_text]),
-        h("div", {}, [node_guess]),
-        h("div", {}, [node_answer]),
-    ]);
+    return clone;
 }
 
 
