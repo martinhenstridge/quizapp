@@ -74,6 +74,7 @@ Quiz.prototype.push_update = function (evt) {
     const url = "";
     const request = {
         method: "POST",
+        cache: "no-store",
         headers: {
             "Content-Type": "application/json",
         },
@@ -95,6 +96,7 @@ Quiz.prototype.pull_updates = function () {
     const url = `/events/${COUNTER}.json?${new Date()}`;
     const request = {
         method: "GET",
+        cache: "no-store",
         credentials: "same-origin",
         mode: "same-origin",
     };

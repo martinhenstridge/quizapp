@@ -1,0 +1,21 @@
+function venv {
+    rm -rf venv
+    python3 -m venv venv
+    venv/bin/pip install --upgrade pip
+    venv/bin/pip install -r requirements.txt
+}
+
+function devserver {
+    FLASK_APP=quiz \
+    FLASK_ENV=development \
+    venv/bin/flask run
+}
+
+function help {
+    echo "$0 <task> <args>"
+    echo "Tasks:"
+    compgen -A function | cat -n
+}
+
+TIMEFORMAT="Task completed in %3lR"
+time ${@:-help}

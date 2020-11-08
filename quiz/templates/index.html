@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <title>Quiz!</title>
+    <meta charset="utf-8" />
+    <style>div.question { border: solid; border-width: 1px; }</style>
+  </head>
+  <body>
+    <div id="quiz"></div>
+    <template id="template_question">
+      <div class="question">
+        <div>
+          <span class="question_number"></span>
+          <span class="question_text"></span>
+        </div>
+        <div>
+          <input class="question_guess">
+        </div>
+        <div>
+          <p class="question_answer"></p>
+        </div>
+      </div>
+    </template>
+    <script src="/static/quiz.js"></script>
+  </body>
+</html>
