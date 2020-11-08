@@ -5,6 +5,10 @@ function venv {
     venv/bin/pip install -r requirements.txt
 }
 
+function fmt {
+    venv/bin/black quiz
+}
+
 function devserver {
     FLASK_APP=quiz \
     FLASK_ENV=development \

@@ -2,7 +2,6 @@ import sqlite3
 
 
 class Quiz:
-
     def __init__(self, inst, conn):
         self.inst = inst
         self.conn = conn
@@ -20,7 +19,8 @@ class Quiz:
     def ensure(cls, inst):
         conn = cls.connection(inst)
         with conn:
-            conn.executescript("""
+            conn.executescript(
+                """
                 CREATE TABLE IF NOT EXISTS players (
                     name TEXT PRIMARY KEY,
                     team INTEGER NOT NULL
@@ -39,24 +39,33 @@ class Quiz:
                     data TEXT NOT NULL,
                     FOREIGN KEY(player) REFERENCES players(name)
                 );
-            """)
+            """
+            )
         return cls(inst, conn)
 
     def add_player(self, name):
         with self.conn as conn:
-            conn.execute("""
+            conn.execute(
+                """
                 INSERT INTO users(name, team) VALUES (?, ?);
-            """, (name,))
+            """,
+                (name,),
+            )
 
     def set_player(self, name, team):
         with self.conn as conn:
-            conn.execute("""
+            conn.execute(
+                """
                 UPDATE users SET team = ? WHERE name = ?;
-            """, (team, name))
+            """,
+                (team, name),
+            )
 
     def get_players(self):
         with self.conn as conn:
-            cur = conn.execute("""
+            cur = conn.execute(
+                """
                 SELECT name, team FROM users;
-            """)
+            """
+            )
             return cur.fetchall()
