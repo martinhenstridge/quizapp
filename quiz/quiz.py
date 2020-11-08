@@ -9,7 +9,7 @@ class Quiz:
 
     @staticmethod
     def connection(inst):
-        return sqlite3.connect(f"quiz.{inst}.db")
+        return sqlite3.connect(f"db/quiz.{inst}.db")
 
     @classmethod
     def lookup(cls, inst):
@@ -27,8 +27,11 @@ class Quiz:
                 );
                 CREATE TABLE IF NOT EXISTS questions (
                     number INTEGER PRIMARY KEY,
-                    question TEXT NOT NULL,
-                    answer TEXT NOT NULL
+                    type INTEGER NOT NULL,
+                    text TEXT NOT NULL,
+                    data BLOB,
+                    answer TEXT NOT NULL,
+                    CHECK (type = 0 OR data IS NOT NULL)
                 );
                 CREATE TABLE IF NOT EXISTS events (
                     number INTEGER PRIMARY KEY,
