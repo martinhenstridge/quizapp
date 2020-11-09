@@ -8,15 +8,15 @@ class Quiz:
 
     @staticmethod
     def connection(inst):
-        return sqlite3.connect(f"db/quiz.{inst}.db")
+        return sqlite3.connect(f"db.{inst}")
 
     @classmethod
-    def lookup(cls, inst):
+    def get(cls, inst):
         conn = cls.connection(inst)
         return cls(inst, conn)
 
     @classmethod
-    def ensure(cls, inst):
+    def new(cls, inst):
         conn = cls.connection(inst)
         with conn:
             conn.executescript(
