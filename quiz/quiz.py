@@ -2,22 +2,22 @@ import sqlite3
 
 
 class Quiz:
-    def __init__(self, inst, conn):
-        self.inst = inst
+    def __init__(self, key, conn):
+        self.key = key
         self.conn = conn
 
     @staticmethod
-    def connection(inst):
-        return sqlite3.connect(f"db.{inst}")
+    def connection(key):
+        return sqlite3.connect(f"db.{key}")
 
     @classmethod
-    def get(cls, inst):
-        conn = cls.connection(inst)
-        return cls(inst, conn)
+    def get(cls, key):
+        conn = cls.connection(key)
+        return cls(key, conn)
 
     @classmethod
-    def new(cls, inst):
-        conn = cls.connection(inst)
+    def new(cls, key):
+        conn = cls.connection(key)
         with conn:
             conn.executescript(
                 """
@@ -41,32 +41,28 @@ class Quiz:
                 );
             """
             )
-        return cls(inst, conn)
+        return cls(key, conn)
 
     def add_player(self, name, team):
         with self.conn as conn:
             conn.execute(
-                """
-                INSERT INTO players(name, team) VALUES (?, ?);
-            """,
+                "INSERT INTO players(name, team) VALUES (?, ?)",
                 (name, team),
             )
 
-    def set_player(self, name, team):
+    def update_player(self, name, team):
         with self.conn as conn:
             conn.execute(
-                """
-                UPDATE players SET team = ? WHERE name = ?;
-            """,
+                "UPDATE players SET team = ? WHERE name = ?",
                 (team, name),
             )
+
+    def remove_player(self, name):
+        with self.conn as conn:
+            conn.execute("DELETE FROM players WHERE name = ?", (name,))
 
     @property
     def players(self):
         with self.conn as conn:
-            cur = conn.execute(
-                """
-                SELECT name, team FROM players;
-            """
-            )
+            cur = conn.execute("SELECT name, team FROM players ORDER BY team, name")
             return cur.fetchall()

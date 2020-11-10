@@ -9,38 +9,46 @@ def create_app():
     def handler_home():
         return "Welcome!\n"
 
-    @app.route("/create", methods=["GET", "POST"])
-    def handler_create():
+    @app.route("/new", methods=["GET", "POST"])
+    def handler_new():
         if request.method == "GET":
-            return views.create.page()
+            return views.new.page()
         if request.method == "POST":
-            return views.create.post(request.form["inst"])
+            return views.new.post(request.form)
 
-    @app.route("/edit/<inst>/")
-    def handler_edit(inst):
-        return views.edit.page(inst)
+    @app.route("/edit/<key>/")
+    def handler_edit(key):
+        return views.edit.page(key)
 
-    @app.route("/edit/<inst>/players/")
-    def handler_edit_players(inst):
-        return views.edit.page_players(inst)
+    @app.route("/edit/<key>/players/")
+    def handler_edit_players(key):
+        return views.edit.page_players(key)
 
-    @app.route("/edit/<inst>/players/add", methods=["POST"])
-    def handler_edit_players_add(inst):
-        return views.edit.post_players_add(inst, request.form["name"], request.form["team"])
+    @app.route("/edit/<key>/players/add", methods=["POST"])
+    def handler_edit_players_add(key):
+        return views.edit.post_players_add(key, request.form)
 
-    @app.route("/edit/<inst>/questions/")
-    def handler_edit_questions(inst):
-        return views.edit.page_questions(inst)
+    @app.route("/edit/<key>/players/update", methods=["POST"])
+    def handler_edit_players_update(key):
+        return views.edit.post_players_update(key, request.form)
 
-    @app.route("/play/<inst>/")
-    def handler_play(inst):
-        return views.play.page(inst)
+    @app.route("/edit/<key>/players/remove", methods=["POST"])
+    def handler_edit_players_remove(key):
+        return views.edit.post_players_remove(key, request.form)
 
-    @app.route("/play/<inst>/<name>")
-    def handler_play_player(inst, name):
-        return views.play.page_player(inst, name)
+    @app.route("/edit/<key>/questions/")
+    def handler_edit_questions(key):
+        return views.edit.page_questions(key)
 
-    @app.route("/events/<inst>", methods=["POST"])
+    @app.route("/play/<key>/")
+    def handler_play(key):
+        return views.play.page(key)
+
+    @app.route("/play/<key>/<name>")
+    def handler_play_player(key, name):
+        return views.play.page_player(key, name)
+
+    @app.route("/events/<key>", methods=["POST"])
     def handler_api():
         return None
 

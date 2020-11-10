@@ -3,34 +3,65 @@
   <head>
     <title>Quiz!</title>
     <meta charset="utf-8" />
+    <style>
+      table {
+        font-family: monospace;
+        border-collapse: collapse;
+      }
+      th, td {
+        padding: 8px;
+      }
+      thead > tr {
+        background-color: #4CAF50;
+        color: white;
+        border: solid;
+        border-bottom: 2px solid black;
+      }
+    </style>
   </head>
   <body>
-    <form method="POST">
-      <table>
+    <form method="POST" action="add" id="add"></form>
+    <table>
+      <thead>
         <tr>
+          <th></th>
           <th>Name</th>
           <th>Team</th>
-          <th></th>
         </tr>
+      </thead>
+      <tbody>
         {% for player in players %}
         <tr>
+          <td>
+            <form method="POST" action="remove">
+              <input type="hidden" name="name" value="{{ player[0] }}">
+              <input type="submit" value="-">
+            </form>
+          </td>
           <td>{{ player[0] }}</td>
-          <td>{{ player[1] }}</td>
-          <td></td>
+          <td>
+            <form method="POST" action="update">
+              <input type="hidden" name="name" value="{{ player[0] }}">
+              <input type="number" name="team" value="{{ player[1] }}" required>
+              <input type="submit" value="Update">
+            </form>
+          </td>
         </tr>
         {% endfor %}
+      </tbody>
+      <tfoot>
         <tr>
           <td>
-            <input type="text" name="name" required>
+            <input form="add" type="submit" value="+">
           </td>
           <td>
-            <input type="text" name="team" required>
+            <input form="add" type="text" name="name" required>
           </td>
           <td>
-            <input type="submit" formaction="add" value="Add!">
+            <input form="add" type="number" name="team" required>
           </td>
         </tr>
-      </table>
-    </form>
+      </tfoot>
+    </table>
   </body>
 </html>

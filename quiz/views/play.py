@@ -1,6 +1,6 @@
-def page(inst):
-    return f"[{inst}] LIST PLAYERS HERE..."
+def page(key):
+    return f"[{key}] LIST PLAYERS HERE..."
 
 
-def page_player(inst, player):
-    return f"[{inst}:{player}] PLAY HERE..."
+def page_player(key, player):
+    return f"[{key}:{player}] PLAY HERE..."

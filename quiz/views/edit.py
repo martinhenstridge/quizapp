@@ -1,23 +1,49 @@
 from flask import redirect, render_template, url_for
-from .quiz import Quiz
+from ..quiz import Quiz
 
 
-def page(inst):
-    purl = url_for("handler_edit_players", inst=inst)
-    qurl = url_for("handler_edit_questions", inst=inst)
+def page(key):
+    purl = url_for("handler_edit_players", key=key)
+    qurl = url_for("handler_edit_questions", key=key)
     return render_template("edit.html", purl=purl, qurl=qurl)
 
 
-def page_players(inst):
-    quiz = Quiz.get(inst)
+def page_players(key):
+    quiz = Quiz.get(key)
     return render_template("edit_players.html", players=quiz.players)
 
 
-def page_questions(inst):
-    return f"[{inst}] EDIT QUESTIONS HERE..."
+def page_questions(key):
+    return f"[{key}] EDIT QUESTIONS HERE..."
 
 
-def post_edit_players_add(inst, name, team):
-    quiz = Quiz.get(inst)
+def post_players_add(key, data):
+    name = data["name"]
+    team = data["team"]
+
+    quiz = Quiz.get(key)
     quiz.add_player(name, team)
-    return render_template("edit_players.html", players=quiz.players)
+
+    dest = url_for("handler_edit_players", key=key)
+    return redirect(dest)
+
+
+def post_players_update(key, data):
+    name = data["name"]
+    team = data["team"]
+
+    quiz = Quiz.get(key)
+    quiz.update_player(name, team)
+
+    dest = url_for("handler_edit_players", key=key)
+    return redirect(dest)
+
+
+def post_players_remove(key, data):
+    name = data["name"]
+
+    quiz = Quiz.get(key)
+    quiz.remove_player(name)
+
+    dest = url_for("handler_edit_players", key=key)
+    return redirect(dest)
