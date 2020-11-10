@@ -43,29 +43,30 @@ class Quiz:
             )
         return cls(inst, conn)
 
-    def add_player(self, name):
+    def add_player(self, name, team):
         with self.conn as conn:
             conn.execute(
                 """
-                INSERT INTO users(name, team) VALUES (?, ?);
+                INSERT INTO players(name, team) VALUES (?, ?);
             """,
-                (name,),
+                (name, team),
             )
 
     def set_player(self, name, team):
         with self.conn as conn:
             conn.execute(
                 """
-                UPDATE users SET team = ? WHERE name = ?;
+                UPDATE players SET team = ? WHERE name = ?;
             """,
                 (team, name),
             )
 
-    def get_players(self):
+    @property
+    def players(self):
         with self.conn as conn:
             cur = conn.execute(
                 """
-                SELECT name, team FROM users;
+                SELECT name, team FROM players;
             """
             )
             return cur.fetchall()

@@ -1,6 +1,5 @@
 from flask import Flask, request
 from . import api, views
-from .quiz import Quiz
 
 
 def create_app():
@@ -10,32 +9,39 @@ def create_app():
     def handler_home():
         return "Welcome!\n"
 
-    @app.route("/new", methods=["GET", "POST"])
-    def handler_quiz_new():
+    @app.route("/create", methods=["GET", "POST"])
+    def handler_create():
         if request.method == "GET":
-            return views.page_new()
+            return views.create.page()
         if request.method == "POST":
-            return views.post_new(request.form["inst"])
+            return views.create.post(request.form["inst"])
 
-    @app.route("/edit/<inst>")
-    def handler_quiz_edit(inst):
-        quiz = Quiz.get(inst)
-        return views.edit(quiz)
+    @app.route("/edit/<inst>/")
+    def handler_edit(inst):
+        return views.edit.page(inst)
+
+    @app.route("/edit/<inst>/players/")
+    def handler_edit_players(inst):
+        return views.edit.page_players(inst)
+
+    @app.route("/edit/<inst>/players/add", methods=["POST"])
+    def handler_edit_players_add(inst):
+        return views.edit.post_players_add(inst, request.form["name"], request.form["team"])
+
+    @app.route("/edit/<inst>/questions/")
+    def handler_edit_questions(inst):
+        return views.edit.page_questions(inst)
 
     @app.route("/play/<inst>/")
-    def handler_quiz_home(inst):
-        quiz = Quiz.get(inst)
-        return views.home(quiz)
+    def handler_play(inst):
+        return views.play.page(inst)
 
     @app.route("/play/<inst>/<name>")
-    def handler_quiz_play(inst, name):
-        quiz = Quiz.get(inst)
-        return views.play(quiz, name)
+    def handler_play_player(inst, name):
+        return views.play.page_player(inst, name)
 
-    @app.route("/api", methods=["POST"])
-    def handler_quiz_api():
-        #quiz = Quiz.lookup(inst)
-        #return api.handle(quiz, request.json)
+    @app.route("/events/<inst>", methods=["POST"])
+    def handler_api():
         return None
 
     return app

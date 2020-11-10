@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <title>Quiz!</title>
+    <meta charset="utf-8" />
+  </head>
+  <body>
+    <form method="POST">
+      <table>
+        <tr>
+          <th>Name</th>
+          <th>Team</th>
+          <th></th>
+        </tr>
+        {% for player in players %}
+        <tr>
+          <td>{{ player[0] }}</td>
+          <td>{{ player[1] }}</td>
+          <td></td>
+        </tr>
+        {% endfor %}
+        <tr>
+          <td>
+            <input type="text" name="name" required>
+          </td>
+          <td>
+            <input type="text" name="team" required>
+          </td>
+          <td>
+            <input type="submit" formaction="add" value="Add!">
+          </td>
+        </tr>
+      </table>
+    </form>
+  </body>
+</html>
