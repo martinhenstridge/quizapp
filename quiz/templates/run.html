@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <title>Quiz!</title>
+    <meta charset="utf-8" />
+    <style>
+      table {
+        font-family: monospace;
+        border-collapse: collapse;
+      }
+      th, td {
+        padding: 8px;
+      }
+      thead > tr {
+        background-color: #4CAF50;
+        color: white;
+        border: solid;
+        border-bottom: 2px solid black;
+      }
+    </style>
+  </head>
+  <body>
+    <table>
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>Question</th>
+          <th>Answer</th>
+          <th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for question in questions %}
+        <tr>
+          <td>{{ question[0] }}</td>
+          <td>{{ question[2] }}</td>
+          <td>{{ question[3] }}</td>
+          <td>
+            <form method="POST">
+              <input type="hidden" name="number" value="{{ question[0] }}">
+              {% if question[1] == 0 %}
+              <input type="submit" formaction="ask" value="ask">
+              {% elif question[1] == 1 %}
+              <input type="submit" formaction="lock" value="lock">
+              {% elif question[1] == 2 %}
+              <input type="submit" formaction="reveal" value="reveal">
+              {% else %}
+              --
+              {% endif %}
+            </form>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </body>
+</html>

@@ -43,14 +43,14 @@
           <td>
             <form method="POST" action="update-text">
               <input type="hidden" name="number" value="{{ question[0] }}">
-              <input type="text" name="text" value="{{ question[1] }}" required>
+              <input type="text" name="text" value="{{ question[2] }}" required>
               <input type="submit" value="Update">
             </form>
           </td>
           <td>
             <form method="POST" action="update-answer">
               <input type="hidden" name="number" value="{{ question[0] }}">
-              <input type="text" name="answer" value="{{ question[2] }}" required>
+              <input type="text" name="answer" value="{{ question[3] }}" required>
               <input type="submit" value="Update">
             </form>
           </td>

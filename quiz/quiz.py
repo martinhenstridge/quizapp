@@ -1,3 +1,4 @@
+import json
 import sqlite3
 
 
@@ -27,6 +28,7 @@ class Quiz:
                 );
                 CREATE TABLE IF NOT EXISTS questions (
                     number INTEGER PRIMARY KEY,
+                    state INTEGER NOT NULL DEFAULT 0,
                     text TEXT NOT NULL,
                     answer TEXT NOT NULL
                 );
@@ -79,9 +81,23 @@ class Quiz:
                 (answer, number),
             )
 
+    def update_question_state(self, number, state):
+        with self.conn as conn:
+            conn.execute(
+                "UPDATE questions SET state = ? WHERE number = ?",
+                (state, number),
+            )
+
     def remove_question(self, number):
         with self.conn as conn:
             conn.execute("DELETE FROM questions WHERE number = ?", (number,))
+
+    def post_event(self, player, data):
+        with self.conn as conn:
+            conn.execute(
+                "INSERT INTO events(player, data) VALUES (?, ?)",
+                (player, json.dumps(data)),
+            )
 
     @property
     def players(self):
@@ -93,6 +109,20 @@ class Quiz:
     def questions(self):
         with self.conn as conn:
             cur = conn.execute(
-                "SELECT number, text, answer FROM questions ORDER BY number"
+                "SELECT number, state, text, answer FROM questions ORDER BY number"
             )
             return cur.fetchall()
+
+    def get_question_text(self, number):
+        with self.conn as conn:
+            cur = conn.execute(
+                "SELECT text FROM questions WHERE number = ?", (number,)
+            )
+            return cur.fetchone()
+
+    def get_question_answer(self, number):
+        with self.conn as conn:
+            cur = conn.execute(
+                "SELECT answer FROM questions WHERE number = ?", (number,)
+            )
+            return cur.fetchone()
