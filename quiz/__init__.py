@@ -1,1 +1,5 @@
-from .www import create_app
+from flask import Flask
+app = Flask(__name__)
+
+# Register route handlers.
+from . import views
