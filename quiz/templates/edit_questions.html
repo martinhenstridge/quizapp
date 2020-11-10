@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <title>Quiz!</title>
+    <meta charset="utf-8" />
+    <style>
+      table {
+        font-family: monospace;
+        border-collapse: collapse;
+      }
+      th, td {
+        padding: 8px;
+      }
+      thead > tr {
+        background-color: #4CAF50;
+        color: white;
+        border: solid;
+        border-bottom: 2px solid black;
+      }
+    </style>
+  </head>
+  <body>
+    <form method="POST" action="add" id="add"></form>
+    <table>
+      <thead>
+        <tr>
+          <th></th>
+          <th>#</th>
+          <th>Question</th>
+          <th>Answer</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for question in questions %}
+        <tr>
+          <td>
+            <form method="POST" action="remove">
+              <input type="hidden" name="number" value="{{ question[0] }}">
+              <input type="submit" value="-">
+            </form>
+          </td>
+          <td>{{ question[0] }}</td>
+          <td>
+            <form method="POST" action="update-text">
+              <input type="hidden" name="number" value="{{ question[0] }}">
+              <input type="text" name="text" value="{{ question[1] }}" required>
+              <input type="submit" value="Update">
+            </form>
+          </td>
+          <td>
+            <form method="POST" action="update-answer">
+              <input type="hidden" name="number" value="{{ question[0] }}">
+              <input type="text" name="answer" value="{{ question[2] }}" required>
+              <input type="submit" value="Update">
+            </form>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+      <tfoot>
+        <tr>
+          <td>
+            <input form="add" type="submit" value="+">
+          </td>
+          <td>
+          </td>
+          <td>
+            <input form="add" type="text" name="text" required>
+          </td>
+          <td>
+            <input form="add" type="text" name="answer" required>
+          </td>
+        </tr>
+      </tfoot>
+    </table>
+  </body>
+</html>

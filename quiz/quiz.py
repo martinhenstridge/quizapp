@@ -27,11 +27,8 @@ class Quiz:
                 );
                 CREATE TABLE IF NOT EXISTS questions (
                     number INTEGER PRIMARY KEY,
-                    type INTEGER NOT NULL,
                     text TEXT NOT NULL,
-                    data BLOB,
-                    answer TEXT NOT NULL,
-                    CHECK (type = 0 OR data IS NOT NULL)
+                    answer TEXT NOT NULL
                 );
                 CREATE TABLE IF NOT EXISTS events (
                     number INTEGER PRIMARY KEY,
@@ -61,8 +58,39 @@ class Quiz:
         with self.conn as conn:
             conn.execute("DELETE FROM players WHERE name = ?", (name,))
 
+    def add_question(self, text, answer):
+        with self.conn as conn:
+            conn.execute(
+                "INSERT INTO questions(text, answer) VALUES (?, ?)",
+                (text, answer),
+            )
+
+    def update_question_text(self, number, text):
+        with self.conn as conn:
+            conn.execute(
+                "UPDATE questions SET text = ? WHERE number = ?",
+                (text, number),
+            )
+
+    def update_question_answer(self, number, answer):
+        with self.conn as conn:
+            conn.execute(
+                "UPDATE questions SET answer = ? WHERE number = ?",
+                (answer, number),
+            )
+
+    def remove_question(self, number):
+        with self.conn as conn:
+            conn.execute("DELETE FROM questions WHERE number = ?", (number,))
+
     @property
     def players(self):
         with self.conn as conn:
             cur = conn.execute("SELECT name, team FROM players ORDER BY team, name")
+            return cur.fetchall()
+
+    @property
+    def questions(self):
+        with self.conn as conn:
+            cur = conn.execute("SELECT number, text, answer FROM questions ORDER BY number")
             return cur.fetchall()

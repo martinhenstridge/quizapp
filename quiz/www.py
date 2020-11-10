@@ -16,9 +16,11 @@ def create_app():
         if request.method == "POST":
             return views.new.post(request.form)
 
+
     @app.route("/edit/<key>/")
     def handler_edit(key):
         return views.edit.page(key)
+
 
     @app.route("/edit/<key>/players/")
     def handler_edit_players(key):
@@ -36,9 +38,27 @@ def create_app():
     def handler_edit_players_remove(key):
         return views.edit.post_players_remove(key, request.form)
 
+
     @app.route("/edit/<key>/questions/")
     def handler_edit_questions(key):
         return views.edit.page_questions(key)
+
+    @app.route("/edit/<key>/questions/add", methods=["POST"])
+    def handler_edit_questions_add(key):
+        return views.edit.post_questions_add(key, request.form)
+
+    @app.route("/edit/<key>/questions/update-text", methods=["POST"])
+    def handler_edit_questions_update_text(key):
+        return views.edit.post_questions_update_text(key, request.form)
+
+    @app.route("/edit/<key>/questions/update-answer", methods=["POST"])
+    def handler_edit_questions_update_answer(key):
+        return views.edit.post_questions_update_answer(key, request.form)
+
+    @app.route("/edit/<key>/questions/remove", methods=["POST"])
+    def handler_edit_questions_remove(key):
+        return views.edit.post_questions_remove(key, request.form)
+
 
     @app.route("/play/<key>/")
     def handler_play(key):
