@@ -92,5 +92,7 @@ class Quiz:
     @property
     def questions(self):
         with self.conn as conn:
-            cur = conn.execute("SELECT number, text, answer FROM questions ORDER BY number")
+            cur = conn.execute(
+                "SELECT number, text, answer FROM questions ORDER BY number"
+            )
             return cur.fetchall()
