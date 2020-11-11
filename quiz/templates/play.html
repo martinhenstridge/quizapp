@@ -1,24 +1,22 @@
 <!DOCTYPE html>
 <html lang="en">
   <head>
-    <title>quiz|{{ quizid }}|play</title>
     <meta charset="utf-8" />
-    <style>div.question { border: solid; border-width: 1px; }</style>
+    <title>quiz|{{ quizid }}|play</title>
+    <link rel="stylesheet" href="/static/quiz.css">
   </head>
   <body>
-    <h1>[{{ quizid }}] Team {{ team }} ({{ player }})</h1>
+    <h1>Team {{ team }} ({{ player }})</h1>
     <div id="quiz"></div>
     <template id="template_question">
       <div class="question">
+        <div class="question_number"></div>
         <div>
-          <span class="question_number"></span>
-          <span class="question_text"></span>
-        </div>
-        <div>
-          <input class="question_guess">
-        </div>
-        <div>
-          <p class="question_answer"></p>
+          <div class="question_text"></div>
+          <div>
+            <input class="question_guess">
+          </div>
+          <div class="question_answer"></div>
         </div>
       </div>
     </template>

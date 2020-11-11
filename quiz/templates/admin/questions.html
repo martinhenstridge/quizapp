@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
   <head>
-    <title>Quiz!</title>
+    <title>quiz|{{ quizid }}|questions</title>
     <meta charset="utf-8" />
     <style>
       table {
@@ -20,6 +20,21 @@
     </style>
   </head>
   <body>
+    <h1>Edit questions: {{ quizid }}</h1>
+    <ul>
+      <li>
+        <a href="..">home</a>
+      </li>
+      <li>
+        <a href="../teams">teams</a>
+      </li>
+      <li>
+        <a href="../questions">questions</a>
+      </li>
+      <li>
+        <a href="../run">run</a>
+      </li>
+    </ul>
     <form method="POST" action="add" id="add"></form>
     <table>
       <thead>
