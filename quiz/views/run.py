@@ -23,7 +23,7 @@ def _run_ask(key):
     quiz = Quiz.get(key)
     quiz.update_question_state(number, 1)
     text = quiz.get_question_text(number)
-    quiz.post_event(0, {"text": text})
+    quiz.post_event("_", 1, {"text": text})
 
     dest = url_for("run", key=key)
     return redirect(dest)
@@ -34,7 +34,7 @@ def _run_lock(key):
 
     quiz = Quiz.get(key)
     quiz.update_question_state(number, 2)
-    quiz.post_event(0, {})
+    quiz.post_event("_", 5, {})
 
     dest = url_for("run", key=key)
     return redirect(dest)
@@ -47,7 +47,7 @@ def _run_reveal(key):
     quiz = Quiz.get(key)
     quiz.update_question_state(number, 3)
     answer = quiz.get_question_answer(number)
-    quiz.post_event(0, {"answer": answer})
+    quiz.post_event("_", 6, {"answer": answer})
 
     dest = url_for("run", key=key)
     return redirect(dest)

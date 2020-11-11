@@ -1,1 +1,1 @@
-from . import new, edit, play, run
+from . import edit, events, new, play, run

@@ -9,7 +9,9 @@ class Quiz:
 
     @staticmethod
     def connection(key):
-        return sqlite3.connect(f"db.{key}")
+        conn = sqlite3.connect(f"db.{key}")
+        conn.execute("PRAGMA foreign_keys = 1")
+        return conn
 
     @classmethod
     def get(cls, key):
@@ -33,11 +35,13 @@ class Quiz:
                     answer TEXT NOT NULL
                 );
                 CREATE TABLE IF NOT EXISTS events (
-                    number INTEGER PRIMARY KEY,
+                    seqnum INTEGER PRIMARY KEY,
                     player TEXT NOT NULL,
+                    event INTEGER NOT NULL,
                     data TEXT NOT NULL,
                     FOREIGN KEY(player) REFERENCES players(name)
                 );
+                INSERT INTO players(name, team) VALUES ("_", -1);
             """
             )
         return cls(key, conn)
@@ -92,17 +96,48 @@ class Quiz:
         with self.conn as conn:
             conn.execute("DELETE FROM questions WHERE number = ?", (number,))
 
-    def post_event(self, player, data):
+    def post_event(self, player, event, data):
         with self.conn as conn:
             conn.execute(
-                "INSERT INTO events(player, data) VALUES (?, ?)",
-                (player, json.dumps(data)),
+                "INSERT INTO events(player, event, data) VALUES (?, ?, ?)",
+                (player, event, json.dumps(data)),
             )
+
+    def get_events_since(self, player, latest):
+        with self.conn as conn:
+            cur = conn.execute("SELECT team FROM players WHERE name  = ?", (player,))
+            team = cur.fetchone()
+
+            cur = conn.execute("""
+                SELECT
+                  seqnum,
+                  player,
+                  event,
+                  data
+                FROM
+                  events
+                  INNER JOIN players ON events.player = players.name
+                WHERE
+                  seqnum > ? AND (players.team = -1 OR players.team = ?)
+                ORDER BY
+                  seqnum
+            """, (latest, team))
+            return cur.fetchall()
 
     @property
     def players(self):
         with self.conn as conn:
-            cur = conn.execute("SELECT name, team FROM players ORDER BY team, name")
+            cur = conn.execute("""
+                SELECT
+                  name,
+                  team
+                FROM
+                  players
+                WHERE
+                  name != "_"
+                ORDER BY
+                  team, name
+            """)
             return cur.fetchall()
 
     @property
