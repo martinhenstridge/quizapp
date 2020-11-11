@@ -6,10 +6,28 @@
   </head>
   <body>
     <h1>[{{ quizid }}] Join team {{ team }}</h1>
-    <form method="POST">
-      <label for="player">Your name: </label>
-      <input type="text" name="player" id="player" required>
-      <input type="submit" value="Join!">
-    </form>
+    <table>
+      <thead>
+        <tr>
+          <th></th>
+          <th>#</th>
+          <th>Notes</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for team in teams %}
+        <tr>
+          <td>
+            <form method="POST">
+              <input type="hidden" name="team" value="{{ team[0] }}">
+              <input type="submit" value="Join">
+            </form>
+          </td>
+          <td>{{ team[0] }}</td>
+          <td>{{ team[1] }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
   </body>
 </html>
