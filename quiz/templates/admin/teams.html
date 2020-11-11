@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
   <head>
-    <title>Quiz!</title>
+    <title>quiz|{{ quizid }}|teams</title>
     <meta charset="utf-8" />
     <style>
       table {
@@ -25,24 +25,24 @@
       <thead>
         <tr>
           <th></th>
-          <th>Name</th>
-          <th>Team</th>
+          <th>#</th>
+          <th>Notes</th>
         </tr>
       </thead>
       <tbody>
-        {% for player in players %}
+        {% for team in teams %}
         <tr>
           <td>
             <form method="POST" action="remove">
-              <input type="hidden" name="name" value="{{ player[0] }}">
+              <input type="hidden" name="number" value="{{ team[0] }}">
               <input type="submit" value="-">
             </form>
           </td>
-          <td>{{ player[0] }}</td>
+          <td>{{ team[0] }}</td>
           <td>
             <form method="POST" action="update">
-              <input type="hidden" name="name" value="{{ player[0] }}">
-              <input type="number" name="team" value="{{ player[1] }}" required>
+              <input type="hidden" name="number" value="{{ team[0] }}">
+              <input type="text" name="notes" value="{{ team[1] }}" required>
               <input type="submit" value="Update">
             </form>
           </td>
@@ -55,10 +55,9 @@
             <input form="add" type="submit" value="+">
           </td>
           <td>
-            <input form="add" type="text" name="name" required>
           </td>
           <td>
-            <input form="add" type="number" name="team" required>
+            <input form="add" type="text" name="notes" required>
           </td>
         </tr>
       </tfoot>

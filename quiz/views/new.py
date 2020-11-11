@@ -8,7 +8,8 @@ def new():
     if request.method == "GET":
         return render_template("new.html")
 
-    key = request.form["key"]
-    quiz = Quiz.new(key)
-    dest = url_for("edit", key=key)
+    quizid = request.form["quizid"]
+    quiz = Quiz.new(quizid)
+
+    dest = url_for("admin", quizid=quizid)
     return redirect(dest)

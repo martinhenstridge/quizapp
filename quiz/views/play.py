@@ -1,19 +1,29 @@
-from collections import defaultdict
-from flask import render_template, url_for
+from flask import jsonify, render_template, request, session
 from ..quiz import Quiz
 from .. import app
 
 
-@app.route("/play/<key>/")
-def play(key):
-    quiz = Quiz.get(key)
-    teams = defaultdict(list)
-    for name, team in quiz.players:
-        url = url_for("play_player", key=key, name=name)
-        teams[team].append((name, url))
-    return render_template("play.html", key=key, teams=teams)
+@app.route("/<quizid>/play/<team>/")
+def play(quizid, team):
+    quiz = Quiz.get(quizid)
+    player = session.get("player")
+
+    # Unidentified player, redirect to join page.
+    if player is None:
+        dest = url_for("join", quizid=quizid, team=team)
+        return redirect(dest)
+
+    return render_template("play.html", quizid=quizid, team=team, player=player)
 
 
-@app.route("/play/<key>/as/<name>")
-def play_player(key, name):
-    return f"[{key}:{name}] PLAY HERE..."
+@app.route("/<quizid>/play/<team>/events", methods=["GET", "POST"])
+def events(quizid, team):
+    quiz = Quiz.get(quizid)
+
+    if request.method == "POST":
+        print(request.json)
+        # quiz.post_event(request.form)
+
+    since = request.args["since"]
+    events = quiz.get_events_since(team, since)
+    return jsonify(events)

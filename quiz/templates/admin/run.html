@@ -39,11 +39,11 @@
             <form method="POST">
               <input type="hidden" name="number" value="{{ question[0] }}">
               {% if question[1] == 0 %}
-              <input type="submit" formaction="ask" value="ask">
+              <input type="submit" formaction="{{ url_ask }}" value="ask">
               {% elif question[1] == 1 %}
-              <input type="submit" formaction="lock" value="lock">
+              <input type="submit" formaction="{{ url_lock }}" value="lock">
               {% elif question[1] == 2 %}
-              <input type="submit" formaction="reveal" value="reveal">
+              <input type="submit" formaction="{{ url_reveal }}" value="reveal">
               {% else %}
               --
               {% endif %}

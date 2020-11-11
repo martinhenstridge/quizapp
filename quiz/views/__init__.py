@@ -1,1 +1,1 @@
-from . import edit, events, new, play, run
+from . import admin, join, new, play, whoami

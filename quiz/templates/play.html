@@ -1,23 +1,27 @@
 <!DOCTYPE html>
 <html lang="en">
   <head>
-    <title>Quiz!</title>
+    <title>quiz|{{ quizid }}|play</title>
     <meta charset="utf-8" />
+    <style>div.question { border: solid; border-width: 1px; }</style>
   </head>
   <body>
-    <h1>Quiz: "{{ key }}"</h1>
-    <ul>
-      {% for team in teams %}
-      <li>Team {{ team }}
-        <ul>
-          {% for player in teams[team] %}
-            <li>
-              <a href="{{ player[1] }}">{{ player[0] }}</a>
-            </li>
-          {% endfor %}
-        </ul>
-      </li>
-      {% endfor %}
-    </ul>
+    <h1>[{{ quizid }}] Team {{ team }} ({{ player }})</h1>
+    <div id="quiz"></div>
+    <template id="template_question">
+      <div class="question">
+        <div>
+          <span class="question_number"></span>
+          <span class="question_text"></span>
+        </div>
+        <div>
+          <input class="question_guess">
+        </div>
+        <div>
+          <p class="question_answer"></p>
+        </div>
+      </div>
+    </template>
+    <script src="/static/quiz.js"></script>
   </body>
 </html>

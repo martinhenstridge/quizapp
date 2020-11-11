@@ -3,30 +3,30 @@ import sqlite3
 
 
 class Quiz:
-    def __init__(self, key, conn):
-        self.key = key
+    def __init__(self, quizid, conn):
+        self.quizid = quizid
         self.conn = conn
 
     @staticmethod
-    def connection(key):
-        conn = sqlite3.connect(f"db.{key}")
+    def connection(quizid):
+        conn = sqlite3.connect(f"db.{quizid}")
         conn.execute("PRAGMA foreign_keys = 1")
         return conn
 
     @classmethod
-    def get(cls, key):
-        conn = cls.connection(key)
-        return cls(key, conn)
+    def get(cls, quizid):
+        conn = cls.connection(quizid)
+        return cls(quizid, conn)
 
     @classmethod
-    def new(cls, key):
-        conn = cls.connection(key)
+    def new(cls, quizid):
+        conn = cls.connection(quizid)
         with conn:
             conn.executescript(
                 """
-                CREATE TABLE IF NOT EXISTS players (
-                    name TEXT PRIMARY KEY,
-                    team INTEGER NOT NULL
+                CREATE TABLE IF NOT EXISTS teams (
+                    number INTEGER PRIMARY KEY,
+                    notes TEXT NOT NULL
                 );
                 CREATE TABLE IF NOT EXISTS questions (
                     number INTEGER PRIMARY KEY,
@@ -36,33 +36,39 @@ class Quiz:
                 );
                 CREATE TABLE IF NOT EXISTS events (
                     seqnum INTEGER PRIMARY KEY,
+                    team INTEGER NOT NULL,
                     player TEXT NOT NULL,
                     event INTEGER NOT NULL,
+                    question INTEGER NOT NULL,
                     data TEXT NOT NULL,
-                    FOREIGN KEY(player) REFERENCES players(name)
+                    FOREIGN KEY(team) REFERENCES teams(number),
+                    FOREIGN KEY(question) REFERENCES questions(number)
                 );
-                INSERT INTO players(name, team) VALUES ("_", -1);
+                INSERT INTO teams(number, notes) VALUES (0, "");
             """
             )
-        return cls(key, conn)
+        return cls(quizid, conn)
 
-    def add_player(self, name, team):
+    @property
+    def teams(self):
+        with self.conn as conn:
+            cur = conn.execute("SELECT number, notes FROM teams WHERE number != 0")
+            return cur.fetchall()
+
+    def add_team(self, notes):
+        with self.conn as conn:
+            conn.execute("INSERT INTO teams(notes) VALUES (?)", (notes,))
+
+    def update_team(self, number, notes):
         with self.conn as conn:
             conn.execute(
-                "INSERT INTO players(name, team) VALUES (?, ?)",
-                (name, team),
+                "UPDATE teams SET notes = ? WHERE number = ?",
+                (notes, number),
             )
 
-    def update_player(self, name, team):
+    def remove_team(self, number):
         with self.conn as conn:
-            conn.execute(
-                "UPDATE players SET team = ? WHERE name = ?",
-                (team, name),
-            )
-
-    def remove_player(self, name):
-        with self.conn as conn:
-            conn.execute("DELETE FROM players WHERE name = ?", (name,))
+            conn.execute("DELETE FROM teams WHERE number = ?", (number,))
 
     def add_question(self, text, answer):
         with self.conn as conn:
@@ -96,49 +102,41 @@ class Quiz:
         with self.conn as conn:
             conn.execute("DELETE FROM questions WHERE number = ?", (number,))
 
-    def post_event(self, player, event, data):
+    def post_event(self, team, player, event, question, data):
         with self.conn as conn:
             conn.execute(
-                "INSERT INTO events(player, event, data) VALUES (?, ?, ?)",
-                (player, event, json.dumps(data)),
+                "INSERT INTO events(team, player, event, question, data) VALUES (?, ?, ?, ?, ?)",
+                (team, player, event, question, json.dumps(data)),
             )
 
-    def get_events_since(self, player, latest):
+    def get_events_since(self, team, latest):
         with self.conn as conn:
-            cur = conn.execute("SELECT team FROM players WHERE name  = ?", (player,))
-            team = cur.fetchone()
-
-            cur = conn.execute("""
+            cur = conn.execute(
+                """
                 SELECT
                   seqnum,
+                  team,
                   player,
                   event,
+                  question,
                   data
                 FROM
                   events
-                  INNER JOIN players ON events.player = players.name
                 WHERE
-                  seqnum > ? AND (players.team = -1 OR players.team = ?)
+                  seqnum > ? AND (team = 0 OR team = ?)
                 ORDER BY
                   seqnum
-            """, (latest, team))
-            return cur.fetchall()
-
-    @property
-    def players(self):
-        with self.conn as conn:
-            cur = conn.execute("""
-                SELECT
-                  name,
-                  team
-                FROM
-                  players
-                WHERE
-                  name != "_"
-                ORDER BY
-                  team, name
-            """)
-            return cur.fetchall()
+            """,
+                (latest, team),
+            )
+            return [{
+                "seqnum": row[0],
+                "team": row[1],
+                "player": row[2],
+                "type": row[3],
+                "question": row[4],
+                "data": json.loads(row[5]),
+            } for row in cur.fetchall()]
 
     @property
     def questions(self):
@@ -150,14 +148,12 @@ class Quiz:
 
     def get_question_text(self, number):
         with self.conn as conn:
-            cur = conn.execute(
-                "SELECT text FROM questions WHERE number = ?", (number,)
-            )
-            return cur.fetchone()
+            cur = conn.execute("SELECT text FROM questions WHERE number = ?", (number,))
+            return cur.fetchone()[0]
 
     def get_question_answer(self, number):
         with self.conn as conn:
             cur = conn.execute(
                 "SELECT answer FROM questions WHERE number = ?", (number,)
             )
-            return cur.fetchone()
+            return cur.fetchone()[0]

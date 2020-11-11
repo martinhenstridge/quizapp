@@ -54,15 +54,16 @@ function Quiz(selector) {
 };
 
 Quiz.prototype.post = function (evt) {
-    console.debug(`event: ${str_event(evt.type)}${JSON.stringify(evt)}`);
+    console.debug(`event: ${JSON.stringify(evt)}`);
 
     let question;
-    if (this.questions.has(evt.number)) {
-        question = this.questions.get(evt.number);
+    if (this.questions.has(evt.question)) {
+        question = this.questions.get(evt.question);
     } else {
-        question = new Question(this, evt.number);
-        this.questions.set(evt.number, question);
+        question = new Question(this, evt.question);
+        this.questions.set(evt.question, question);
     }
+    console.log(`${question}`);
 
     question.post(evt);
     question.update_dom();
@@ -85,6 +86,7 @@ Quiz.prototype.push_update = function (evt) {
 
     fetch(url, request).then(_status).then(_json).then(evts => {
         for (let evt of evts) {
+            console.log(JSON.stringify(evt));
             this.post(evt);
         }
     });
@@ -93,7 +95,7 @@ Quiz.prototype.push_update = function (evt) {
 Quiz.prototype.pull_updates = function () {
     console.log("Pulling updates from server")
 
-    const url = `/events/${COUNTER}.json?${new Date()}`;
+    const url = `events?since=${LATEST}`;
     const request = {
         method: "GET",
         cache: "no-store",
@@ -125,34 +127,35 @@ Question.prototype.toString = function () {
     return `Q${this.number}(${str_state(this.state)},${this.text},${this.guess},${this.answer})`;
 };
 
-Question.prototype.post = function (data) {
-    switch (data.type) {
+Question.prototype.post = function (evt) {
+    switch (evt.type) {
         case EVENT_ASK:
-            post_event_ask(this, data);
+            console.log("hopefully here...")
+            post_event_ask(this, evt.data);
             break;
 
         case EVENT_EDIT_START:
-            post_event_edit_start(this, data);
+            post_event_edit_start(this, evt.data);
             break;
 
         case EVENT_EDIT_COMPLETE:
-            post_event_edit_complete(this, data);
+            post_event_edit_complete(this, evt.data);
             break;
 
         case EVENT_REMOTE_UPDATE:
-            post_event_remote_update(this, data);
+            post_event_remote_update(this, evt.data);
             break;
 
         case EVENT_LOCK:
-            post_event_lock(this, data);
+            post_event_lock(this, evt.data);
             break;
 
         case EVENT_REVEAL:
-            post_event_reveal(this, data);
+            post_event_reveal(this, evt.data);
             break;
 
         default:
-            throw `Unknown event type: ${data.type}`;
+            throw `Unknown event type: ${evt.type}`;
     }
 }
 
@@ -318,18 +321,10 @@ function process_incoming_events(quiz, evts) {
     }
 }
 
-let COUNTER = 1;
+let LATEST = 0;
 function main() {
     let quiz = new Quiz("div#quiz");
-    setTimeout(function _check() {
-        quiz.pull_updates();
-        COUNTER += 1;
-        if (COUNTER == 12) {
-            return;
-        }
-        setTimeout(_check, 1000);
-    }, 1000);
+    setInterval(function () { quiz.pull_updates(); }, 1000);
 }
 
-// python3 -m http.server 8080 --bind 127.0.0.1 --directory /Users/martinhenstridge/quiz
 main();
