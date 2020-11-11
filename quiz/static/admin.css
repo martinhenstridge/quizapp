@@ -1,0 +1,17 @@
+body {
+  font-family: helvetica;
+}
+
+table {
+  border-collapse: collapse;
+}
+
+th, td {
+  padding: 8px;
+}
+
+thead > tr {
+  background-color: #4CAF50;
+  color: white;
+  border: solid;
+}
