@@ -1,4 +1,4 @@
-from flask import jsonify, render_template, request, session
+from flask import jsonify, redirect, render_template, request, session, url_for
 from ..quiz import Quiz
 from .. import app
 
@@ -32,7 +32,9 @@ def events(quizid):
             data["data"]
         )
         return ""
-    else:
-        since = request.args["since"]
-        events = quiz.get_events_since(session["team"], since)
-        return jsonify(events)
+
+    team = session["team"]
+    since = request.args["since"]
+
+    events = quiz.get_events_since(team, since)
+    return jsonify(events)
