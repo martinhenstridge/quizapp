@@ -1,60 +1,28 @@
 "use strict";
 
 
-// States
-const STATE_OPEN   = 1;
-const STATE_FLUX   = 2;
-const STATE_LOCKED = 3;
-
 // Events
-const EVENT_ASK           = 1;
-const EVENT_EDIT_START    = 2;
-const EVENT_EDIT_COMPLETE = 3;
-const EVENT_REMOTE_UPDATE = 4;
-const EVENT_LOCK          = 5;
-const EVENT_REVEAL        = 6;
-
-function str_state(state) {
-    switch (state) {
-        case STATE_OPEN:
-            return "OPEN";
-        case STATE_FLUX:
-            return "FLUX";
-        case STATE_LOCKED:
-            return "LOCKED";
-        default:
-            return "?";
-    }
-}
-
-function str_event(evt) {
-    switch (evt) {
-        case EVENT_ASK:
-            return "ASK";
-        case EVENT_EDIT_START:
-            return "EDIT_START";
-        case EVENT_EDIT_COMPLETE:
-            return "EDIT_COMPLETE";
-        case EVENT_REMOTE_UPDATE:
-             return "REMOTE_UPDATE";
-        case EVENT_LOCK:
-            return "LOCK";
-        case EVENT_REVEAL:
-            return "REVEAL";
-        default:
-            return "?";
-    }
-}
+const EVENT_ASK      = 1;
+const EVENT_FOCUSIN  = 2;
+const EVENT_FOCUSOUT = 3;
+const EVENT_CHANGE   = 4;
+const EVENT_LOCK     = 5;
+const EVENT_REVEAL   = 6;
 
 
 function Quiz(selector) {
+    this.latest = 0;
     this.node = document.querySelector(selector);
     this.questions = new Map();
-    Object.freeze(this);
+    Object.seal(this);
 };
 
-Quiz.prototype.post = function (evt) {
+Quiz.prototype.inject = function (evt) {
     console.debug(`event: ${JSON.stringify(evt)}`);
+
+    if (typeof evt.question == "undefined") {
+        throw "Malformed event";
+    }
 
     let question;
     if (this.questions.has(evt.question)) {
@@ -63,39 +31,29 @@ Quiz.prototype.post = function (evt) {
         question = new Question(this, evt.question);
         this.questions.set(evt.question, question);
     }
-    console.log(`${question}`);
 
-    question.post(evt);
-    question.update_dom();
+    question.inject(evt);
+    question.dom_update();
 };
 
-Quiz.prototype.push_update = function (evt) {
-    console.log("Pushing update to server")
-
-    const url = "";
+Quiz.prototype.push = function (evt) {
+    const url = "events";
     const request = {
         method: "POST",
         cache: "no-store",
+        credentials: "same-origin",
+        mode: "same-origin",
         headers: {
             "Content-Type": "application/json",
         },
-        credentials: "same-origin",
-        mode: "same-origin",
         body: JSON.stringify(evt),
     };
 
-    fetch(url, request).then(_status).then(_json).then(evts => {
-        for (let evt of evts) {
-            console.log(JSON.stringify(evt));
-            this.post(evt);
-        }
-    });
+    fetch(url, request).then(_status);
 };
 
-Quiz.prototype.pull_updates = function () {
-    console.log("Pulling updates from server")
-
-    const url = `events?since=${LATEST}`;
+Quiz.prototype.poll = function () {
+    const url = `events?since=${this.latest}`;
     const request = {
         method: "GET",
         cache: "no-store",
@@ -105,7 +63,8 @@ Quiz.prototype.pull_updates = function () {
 
     fetch(url, request).then(_status).then(_json).then(evts => {
         for (let evt of evts) {
-            this.post(evt);
+            this.inject(evt);
+            this.latest = evt.seqnum;
         }
     });
 }
@@ -114,189 +73,149 @@ Quiz.prototype.pull_updates = function () {
 function Question(quiz, number) {
     this.quiz = quiz;
     this.number = number;
-    this.state = STATE_LOCKED;
+    this.open = false;
     this.text = "";
     this.guess = "";
     this.answer = null;
-    this.node = new_node(quiz, number);
-    quiz.node.appendChild(this.node);
+    this.dom_insert();
     Object.seal(this);
 }
 
 Question.prototype.toString = function () {
-    return `Q${this.number}(${str_state(this.state)},${this.text},${this.guess},${this.answer})`;
+    return `Q${this.number}(${this.open},${this.text},${this.guess},${this.answer})`;
 };
 
-Question.prototype.post = function (evt) {
-    switch (evt.type) {
-        case EVENT_ASK:
-            console.log("hopefully here...")
-            post_event_ask(this, evt.data);
-            break;
+Question.prototype.dom_insert = function () {
+    const template = document.getElementById("template_question");
+    const clone = template.content.firstElementChild.cloneNode(true);
 
-        case EVENT_EDIT_START:
-            post_event_edit_start(this, evt.data);
-            break;
+    const node_number = clone.querySelector(".question_number");
+    const node_text = clone.querySelector(".question_text");
+    const node_guess = clone.querySelector(".question_guess");
+    const node_answer = clone.querySelector(".question_answer");
 
-        case EVENT_EDIT_COMPLETE:
-            post_event_edit_complete(this, evt.data);
-            break;
+    // Write the question number.
+    node_number.innerText = `Q${this.number}`;
 
-        case EVENT_REMOTE_UPDATE:
-            post_event_remote_update(this, evt.data);
-            break;
+    // Add event listeners - these all push events straight to the server, to be
+    // injected into the quiz once they arrive via polling.
+    node_guess.addEventListener("focusin", (e) => {
+        this.quiz.push({
+            "kind": EVENT_FOCUSIN,
+            "question": this.number,
+            "data": {},
+        });
+        e.stopPropagation()
+    });
+    node_guess.addEventListener("focusout", (e) => {
+        this.quiz.push({
+            "kind": EVENT_FOCUSOUT,
+            "question": this.number,
+            "data": {},
+        });
+        e.stopPropagation()
+    });
+    node_guess.addEventListener("change", (e) => {
+        this.quiz.push({
+            "kind": EVENT_CHANGE,
+            "question": this.number,
+            "data": {
+                "guess": node_guess.value,
+            },
+        });
+        e.stopPropagation()
+    });
+    
+    // Store interesting child nodes for future reference.
+    this.node_text = node_text;
+    this.node_guess = node_guess;
+    this.node_answer = node_answer;
 
-        case EVENT_LOCK:
-            post_event_lock(this, evt.data);
-            break;
-
-        case EVENT_REVEAL:
-            post_event_reveal(this, evt.data);
-            break;
-
-        default:
-            throw `Unknown event type: ${evt.type}`;
-    }
+    // Finally, add the new question element into the DOM.
+    this.quiz.node.appendChild(clone);
 }
 
-Question.prototype.update_dom = function () {
-    const text = this.node.querySelector(".question_text");
-    const guess = this.node.querySelector(".question_guess");
-    const answer = this.node.querySelector(".question_answer");
+Question.prototype.dom_update = function () {
+    this.node_text.innerText = this.text;
 
-    text.innerText = this.text;
-
-    if (this.state !== STATE_FLUX) {
-        guess.value = this.guess;
-        guess.disabled = (this.state === STATE_LOCKED);
+    // Only update guess field if not currently in focus.
+    if (this.node_guess !== document.activeElement) {
+        this.node_guess.value = this.guess;
+        this.node_guess.disabled = !this.open;
     }
 
     if (this.answer === null) {
-        answer.hidden = true;
-        answer.innerText = "";
+        this.node_answer.hidden = true;
+        this.node_answer.innerText = "";
     } else {
-        answer.hidden = false;
-        answer.innerText = this.answer;
+        this.node_answer.hidden = false;
+        this.node_answer.innerText = this.answer;
     }
 }
 
-
-function new_node(quiz, number) {
-    const template = document.getElementById("template_question");
-    const clone = template.content.firstElementChild.cloneNode(true);
-    const input = clone.querySelector("input");
-
-    input.addEventListener("focusin", function (e) {
-        quiz.post({
-            number: number,
-            type: EVENT_EDIT_START,
-        });
-        e.stopPropagation()
-    });
-    input.addEventListener("focusout", function (e) {
-        quiz.post({
-            number: number,
-            type: EVENT_EDIT_COMPLETE,
-            guess: input.value,
-        });
-        e.stopPropagation()
-    });
-
-    return clone;
-}
-
-
-function post_event_ask(question, data) {
-    question.state = STATE_OPEN;
-    question.text = data.text;
-}
-
-
-function post_event_edit_start(question, data) {
-    switch (question.state) {
-        case STATE_OPEN:
-            question.state = STATE_FLUX;
+Question.prototype.inject = function (evt) {
+    switch (evt.kind) {
+        case EVENT_ASK:
+            this.inject_ask(evt.data);
             break;
 
-        case STATE_FLUX:
-            throw "Edit already in progress";
+        case EVENT_FOCUSIN:
+            this.inject_focusin(evt.data);
+            break;
 
-        case STATE_LOCKED:
-            throw "Question locked";
+        case EVENT_FOCUSOUT:
+            this.inject_focusout(evt.data);
+            break;
+
+        case EVENT_CHANGE:
+            this.inject_change(evt.data);
+            break;
+
+        case EVENT_LOCK:
+            this.inject_lock(evt.data);
+            break;
+
+        case EVENT_REVEAL:
+            this.inject_reveal(evt.data);
+            break;
 
         default:
-            throw `Unknown state: ${question.state}`;
+            throw `Unknown event type: ${evt.kind}`;
     }
 }
 
-
-function post_event_edit_complete(question, data) {
-    switch (question.state) {
-        case STATE_FLUX:
-            question.state = STATE_OPEN;
-            question.guess = data.guess;
-            break;
-
-        case STATE_OPEN:
-            throw "No edit in progress";
-
-        case STATE_LOCKED:
-            throw "Question is locked";
-
-        default:
-            throw `Unknown state: ${question.state}`;
-    }
+Question.prototype.inject_ask = function (data) {
+    this.open = true;
+    this.text = data.text;
 }
 
-
-function post_event_remote_update(question, data) {
-    switch (question.state) {
-        case STATE_OPEN:
-            question.guess = data.guess;
-            break;
-
-        case STATE_FLUX:
-            console.debug("Local edit in progress, ignoring");
-            break;
-
-        case STATE_LOCKED:
-            throw "Question is locked";
-
-        default:
-            throw `Unknown state: ${question.state}`;
-    }
+Question.prototype.inject_focusin = function (data) {
+    return;
 }
 
-
-function post_event_lock(question, data) {
-    switch (question.state) {
-        case STATE_OPEN:
-        case STATE_FLUX:
-            question.state = STATE_LOCKED;
-            break;
-
-        case STATE_LOCKED:
-            throw "Duplicate lock";
-
-        default:
-            throw `Unknown state: ${question.state}`;
-    }
+Question.prototype.inject_focusout = function (data) {
+    return;
 }
 
-
-function post_event_reveal(question, data) {
-    switch (question.state) {
-        case STATE_LOCKED:
-            question.answer = data.answer;
-            break;
-
-        case STATE_OPEN:
-        case STATE_FLUX:
-            throw "Revealing answer to open question";
-
-        default:
-            throw `Unknown state: ${question.state}`;
+Question.prototype.inject_change = function (data) {
+    if (!this.open) {
+        throw "Question is locked";
     }
+    this.guess = data.guess;
+}
+
+Question.prototype.inject_lock = function (data) {
+    if (!this.open) {
+        throw "Duplicate lock";
+    }
+    this.open = false;
+}
+
+Question.prototype.inject_reveal = function (data) {
+    if (this.open) {
+        throw "Revealing answer to open question";
+    }
+    this.answer = data.answer;
 }
 
 
@@ -315,16 +234,9 @@ function _json(msg) {
 }
 
 
-function process_incoming_events(quiz, evts) {
-    for (let evt of evts) {
-        quiz.post(evt);
-    }
-}
-
-let LATEST = 0;
 function main() {
     let quiz = new Quiz("div#quiz");
-    setInterval(function () { quiz.pull_updates(); }, 1000);
+    setInterval(function () { quiz.poll(); }, 1000);
 }
 
 main();

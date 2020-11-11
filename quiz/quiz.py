@@ -38,7 +38,7 @@ class Quiz:
                     seqnum INTEGER PRIMARY KEY,
                     team INTEGER NOT NULL,
                     player TEXT NOT NULL,
-                    event INTEGER NOT NULL,
+                    kind INTEGER NOT NULL,
                     question INTEGER NOT NULL,
                     data TEXT NOT NULL,
                     FOREIGN KEY(team) REFERENCES teams(number),
@@ -102,11 +102,11 @@ class Quiz:
         with self.conn as conn:
             conn.execute("DELETE FROM questions WHERE number = ?", (number,))
 
-    def post_event(self, team, player, event, question, data):
+    def add_event(self, kind, team, player, question, data):
         with self.conn as conn:
             conn.execute(
-                "INSERT INTO events(team, player, event, question, data) VALUES (?, ?, ?, ?, ?)",
-                (team, player, event, question, json.dumps(data)),
+                "INSERT INTO events(kind, team, player, question, data) VALUES (?, ?, ?, ?, ?)",
+                (kind, team, player, question, json.dumps(data)),
             )
 
     def get_events_since(self, team, latest):
@@ -115,9 +115,9 @@ class Quiz:
                 """
                 SELECT
                   seqnum,
+                  kind,
                   team,
                   player,
-                  event,
                   question,
                   data
                 FROM
@@ -131,9 +131,9 @@ class Quiz:
             )
             return [{
                 "seqnum": row[0],
-                "team": row[1],
-                "player": row[2],
-                "type": row[3],
+                "kind": row[1],
+                "team": row[2],
+                "player": row[3],
                 "question": row[4],
                 "data": json.loads(row[5]),
             } for row in cur.fetchall()]

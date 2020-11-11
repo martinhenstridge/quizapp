@@ -21,9 +21,17 @@ def events(quizid, team):
     quiz = Quiz.get(quizid)
 
     if request.method == "POST":
-        print(request.json)
-        # quiz.post_event(request.form)
-
-    since = request.args["since"]
-    events = quiz.get_events_since(team, since)
-    return jsonify(events)
+        data = request.json
+        print(data)
+        quiz.add_event(
+            data["kind"],
+            team,
+            session["player"],
+            data["question"],
+            data["data"]
+        )
+        return ""
+    else:
+        since = request.args["since"]
+        events = quiz.get_events_since(team, since)
+        return jsonify(events)
