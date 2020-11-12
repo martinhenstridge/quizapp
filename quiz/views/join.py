@@ -27,4 +27,3 @@ def identify(quizid, team):
 
     dest = url_for("play", quizid=quizid)
     return redirect(dest)
-

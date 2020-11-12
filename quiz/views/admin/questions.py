@@ -6,7 +6,9 @@ from ... import app
 @app.route("/<quizid>/admin/questions/")
 def edit_questions(quizid):
     quiz = Quiz.get(quizid)
-    return render_template("admin/questions.html", quizid=quizid, questions=quiz.questions)
+    return render_template(
+        "admin/questions.html", quizid=quizid, questions=quiz.questions
+    )
 
 
 @app.route("/<quizid>/admin/questions/add", methods=["POST"])

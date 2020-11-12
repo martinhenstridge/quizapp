@@ -29,7 +29,7 @@ def events(quizid):
             session["team"],
             session["player"],
             data["question"],
-            data["data"]
+            data["data"],
         )
         return ""
 

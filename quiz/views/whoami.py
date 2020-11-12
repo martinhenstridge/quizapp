@@ -9,4 +9,3 @@ def whoami(quizid):
     player = session.get("player", "?")
 
     return render_template("whoami.html", quizid=quizid, team=team, player=player)
-

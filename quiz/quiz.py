@@ -129,14 +129,17 @@ class Quiz:
             """,
                 (latest, team),
             )
-            return [{
-                "seqnum": row[0],
-                "kind": row[1],
-                "team": row[2],
-                "player": row[3],
-                "question": row[4],
-                "data": json.loads(row[5]),
-            } for row in cur.fetchall()]
+            return [
+                {
+                    "seqnum": row[0],
+                    "kind": row[1],
+                    "team": row[2],
+                    "player": row[3],
+                    "question": row[4],
+                    "data": json.loads(row[5]),
+                }
+                for row in cur.fetchall()
+            ]
 
     @property
     def questions(self):
