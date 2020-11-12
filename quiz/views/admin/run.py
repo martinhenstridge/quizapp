@@ -14,14 +14,7 @@ from ... import app
 @app.route("/<quizid>/admin/run/")
 def run(quizid):
     quiz = Quiz.get(quizid)
-    return render_template(
-        "admin/run.html",
-        quizid=quizid,
-        questions=quiz.questions,
-        url_ask=url_for("run_ask", quizid=quizid),
-        url_lock=url_for("run_lock", quizid=quizid),
-        url_reveal=url_for("run_reveal", quizid=quizid),
-    )
+    return render_template("admin/run.html", quizid=quizid, questions=quiz.questions)
 
 
 @app.route("/<quizid>/admin/run/ask", methods=["POST"])

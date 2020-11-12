@@ -3,7 +3,7 @@
   <head>
     <meta charset="utf-8" />
     <title>quiz|{{ quizid }}|play</title>
-    <link rel="stylesheet" href="/static/quiz.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='play.css') }}">
   </head>
   <body>
     <h1>Team {{ team }} ({{ player }})</h1>

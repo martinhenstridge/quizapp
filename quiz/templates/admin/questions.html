@@ -3,23 +3,15 @@
   <head>
     <meta charset="utf-8" />
     <title>quiz|{{ quizid }}|questions</title>
-    <link rel="stylesheet" href="/static/admin.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='admin.css') }}">
   </head>
   <body>
     <h1>Edit questions: {{ quizid }}</h1>
     <ul>
-      <li>
-        <a href="..">home</a>
-      </li>
-      <li>
-        <a href="../teams">teams</a>
-      </li>
-      <li>
-        <a href="../questions">questions</a>
-      </li>
-      <li>
-        <a href="../run">run</a>
-      </li>
+      <li><a href="{{ url_for('admin', quizid=quizid) }}">Admin home</a></li>
+      <li><a href="{{ url_for('edit_teams', quizid=quizid) }}">Edit teams</a></li>
+      <li><a href="{{ url_for('edit_questions', quizid=quizid) }}">Edit questions</a></li>
+      <li><a href="{{ url_for('run', quizid=quizid) }}">Run quiz</a></li>
     </ul>
     <form method="POST" action="add" id="add"></form>
     <table>

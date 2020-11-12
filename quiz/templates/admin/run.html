@@ -3,23 +3,15 @@
   <head>
     <meta charset="utf-8" />
     <title>quiz|{{ quizid }}|run</title>
-    <link rel="stylesheet" href="/static/admin.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='admin.css') }}">
   </head>
   <body>
     <h1>Run quiz: {{ quizid }}</h1>
     <ul>
-      <li>
-        <a href="..">home</a>
-      </li>
-      <li>
-        <a href="../teams">teams</a>
-      </li>
-      <li>
-        <a href="../questions">questions</a>
-      </li>
-      <li>
-        <a href="../run">run</a>
-      </li>
+      <li><a href="{{ url_for('admin', quizid=quizid) }}">Admin home</a></li>
+      <li><a href="{{ url_for('edit_teams', quizid=quizid) }}">Edit teams</a></li>
+      <li><a href="{{ url_for('edit_questions', quizid=quizid) }}">Edit questions</a></li>
+      <li><a href="{{ url_for('run', quizid=quizid) }}">Run quiz</a></li>
     </ul>
     <table>
       <thead>
@@ -40,11 +32,11 @@
             <form method="POST">
               <input type="hidden" name="number" value="{{ question[0] }}">
               {% if question[1] == 0 %}
-              <input type="submit" formaction="{{ url_ask }}" value="ask">
+              <input type="submit" formaction="{{ url_for('run_ask', quizid=quizid) }}" value="ask">
               {% elif question[1] == 1 %}
-              <input type="submit" formaction="{{ url_lock }}" value="lock">
+              <input type="submit" formaction="{{ url_for('run_lock', quizid=quizid) }}" value="lock">
               {% elif question[1] == 2 %}
-              <input type="submit" formaction="{{ url_reveal }}" value="reveal">
+              <input type="submit" formaction="{{ url_for('run_reveal', quizid=quizid) }}" value="reveal">
               {% else %}
               --
               {% endif %}
