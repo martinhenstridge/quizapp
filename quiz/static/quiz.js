@@ -81,10 +81,6 @@ function Question(quiz, number) {
     Object.seal(this);
 }
 
-Question.prototype.toString = function () {
-    return `Q${this.number}(${this.open},${this.text},${this.guess},${this.answer})`;
-};
-
 Question.prototype.dom_insert = function () {
     const template = document.getElementById("template_question");
     const clone = template.content.firstElementChild.cloneNode(true);
@@ -156,66 +152,35 @@ Question.prototype.dom_update = function () {
 Question.prototype.inject = function (evt) {
     switch (evt.kind) {
         case EVENT_ASK:
-            this.inject_ask(evt.data);
+            if (this.open) throw "Question already asked";
+            this.open = true;
+            this.text = evt.data.text;
             break;
 
         case EVENT_FOCUSIN:
-            this.inject_focusin(evt.data);
             break;
 
         case EVENT_FOCUSOUT:
-            this.inject_focusout(evt.data);
             break;
 
         case EVENT_CHANGE:
-            this.inject_change(evt.data);
+            if (!this.open) throw "Question is locked";
+            this.guess = evt.data.guess;
             break;
 
         case EVENT_LOCK:
-            this.inject_lock(evt.data);
+            if (!this.open) throw "Question already locked";
+            this.open = false;
             break;
 
         case EVENT_REVEAL:
-            this.inject_reveal(evt.data);
+            if (this.open) throw "Revealing answer to open question";
+            this.answer = evt.data.answer;
             break;
 
         default:
-            throw `Unknown event type: ${evt.kind}`;
+            throw "Unknown event type";
     }
-}
-
-Question.prototype.inject_ask = function (data) {
-    this.open = true;
-    this.text = data.text;
-}
-
-Question.prototype.inject_focusin = function (data) {
-    return;
-}
-
-Question.prototype.inject_focusout = function (data) {
-    return;
-}
-
-Question.prototype.inject_change = function (data) {
-    if (!this.open) {
-        throw "Question is locked";
-    }
-    this.guess = data.guess;
-}
-
-Question.prototype.inject_lock = function (data) {
-    if (!this.open) {
-        throw "Duplicate lock";
-    }
-    this.open = false;
-}
-
-Question.prototype.inject_reveal = function (data) {
-    if (this.open) {
-        throw "Revealing answer to open question";
-    }
-    this.answer = data.answer;
 }
 
 
