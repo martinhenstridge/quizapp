@@ -13,7 +13,6 @@
       <li><a href="{{ url_for('edit_questions', quizid=quizid) }}">Edit questions</a></li>
       <li><a href="{{ url_for('run', quizid=quizid) }}">Run quiz</a></li>
     </ul>
-    <form method="POST" action="add" id="add"></form>
     <table>
       <thead>
         <tr>
@@ -65,24 +64,22 @@
           <td>
             <input form="add" type="text" name="answer" required>
           </td>
-          <td>
-            <ul>
-              <li>
-                <input type="radio" id="text" name="contact" value="text" checked>
-                <label for="text">text</label>
-              </li>
-              <li>
-                <input type="radio" id="image" name="contact" value="image">
-                <label for="image">image</label>
-              </li>
-              <li>
-                <input type="radio" id="audio" name="contact" value="audio">
-                <label for="audio">audio</label>
-              </li>
-              <li>
-                <input type="radio" id="video" name="contact" value="video">
-                <label for="video">video</label>
-              </li>
+          <td></td>
+        </tr>
+        <tr>
+          <td></td>
+          <td></td>
+          <td colspan="2">
+            <form method="POST" action="add" id="add">
+              <input type="radio" id="text" name="contact" value="text" checked>
+              <label for="text">text</label>
+              <input type="radio" id="image" name="contact" value="image">
+              <label for="image">image</label>
+              <input type="radio" id="audio" name="contact" value="audio">
+              <label for="audio">audio</label>
+              <input type="radio" id="video" name="contact" value="video">
+              <label for="video">video</label>
+            </form>
           </td>
         </tr>
       </tfoot>
