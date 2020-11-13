@@ -31,8 +31,12 @@ class Quiz:
                 CREATE TABLE IF NOT EXISTS questions (
                     number INTEGER PRIMARY KEY,
                     state INTEGER NOT NULL DEFAULT 0,
+                    type INTEGER NOT NULL,
                     text TEXT NOT NULL,
-                    answer TEXT NOT NULL
+                    file TEXT,
+                    mime TEXT,
+                    answer TEXT NOT NULL,
+                    CHECK (type = 0 OR (file IS NOT NULL AND mime IS NOT NULL))
                 );
                 CREATE TABLE IF NOT EXISTS events (
                     seqnum INTEGER PRIMARY KEY,
@@ -73,7 +77,7 @@ class Quiz:
     def add_question(self, text, answer):
         with self.conn as conn:
             conn.execute(
-                "INSERT INTO questions(text, answer) VALUES (?, ?)",
+                "INSERT INTO questions(type, text, answer) VALUES (0, ?, ?)",
                 (text, answer),
             )
 

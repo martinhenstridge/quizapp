@@ -21,6 +21,7 @@
           <th>#</th>
           <th>Question</th>
           <th>Answer</th>
+          <th>Type</th>
         </tr>
       </thead>
       <tbody>
@@ -47,6 +48,7 @@
               <input type="submit" value="Update">
             </form>
           </td>
+          <td>@@@</td>
         </tr>
         {% endfor %}
       </tbody>
@@ -62,6 +64,25 @@
           </td>
           <td>
             <input form="add" type="text" name="answer" required>
+          </td>
+          <td>
+            <ul>
+              <li>
+                <input type="radio" id="text" name="contact" value="text" checked>
+                <label for="text">text</label>
+              </li>
+              <li>
+                <input type="radio" id="image" name="contact" value="image">
+                <label for="image">image</label>
+              </li>
+              <li>
+                <input type="radio" id="audio" name="contact" value="audio">
+                <label for="audio">audio</label>
+              </li>
+              <li>
+                <input type="radio" id="video" name="contact" value="video">
+                <label for="video">video</label>
+              </li>
           </td>
         </tr>
       </tfoot>
