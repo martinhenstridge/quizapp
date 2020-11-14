@@ -207,17 +207,27 @@ class Quiz:
                 for row in cur.fetchall()
             ]
 
-    def get_question_text(self, number):
-        with self.conn as conn:
-            cur = conn.execute("SELECT text FROM questions WHERE number = ?", (number,))
-            return cur.fetchone()[0]
-
-    def get_question_answer(self, number):
+    def get_question(self, number):
         with self.conn as conn:
             cur = conn.execute(
-                "SELECT answer FROM questions WHERE number = ?", (number,)
+                """
+                SELECT
+                  number,
+                  state,
+                  kind,
+                  text,
+                  answer,
+                  filename,
+                  mimetype
+                FROM
+                  questions
+                WHERE
+                  number = ?
+                """,
+                (number,),
             )
-            return cur.fetchone()[0]
+            row = cur.fetchone()
+            return Question(row[0], row[1], row[2], row[3], row[4], row[5], row[6])
 
     def get_asset_mimetype(self, filename):
         with self.conn as conn:

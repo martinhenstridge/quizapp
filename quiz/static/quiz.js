@@ -28,7 +28,7 @@ Quiz.prototype.inject = function (evt) {
     if (this.questions.has(evt.question)) {
         question = this.questions.get(evt.question);
     } else {
-        question = new Question(this, evt.question);
+        question = new Question(this, evt.question, evt.data.kind, evt.data.src);
         this.questions.set(evt.question, question);
     }
 
@@ -70,35 +70,57 @@ Quiz.prototype.poll = function () {
 }
 
 
-function Question(quiz, number) {
+function Question(quiz, number, kind, src) {
     this.quiz = quiz;
-    this.number = number;
     this.open = false;
     this.text = "";
     this.guess = "";
     this.answer = null;
-    this.dom_insert();
+    this.dom_insert(number, kind, src);
     Object.seal(this);
 }
 
-Question.prototype.dom_insert = function () {
+Question.prototype.dom_insert = function (number, kind, src) {
     const template = document.getElementById("template_question");
     const clone = template.content.firstElementChild.cloneNode(true);
 
     const node_number = clone.querySelector(".question_number");
     const node_text = clone.querySelector(".question_text");
+    const node_asset = clone.querySelector(".question_asset");
     const node_guess = clone.querySelector(".question_guess");
     const node_answer = clone.querySelector(".question_answer");
 
     // Write the question number.
-    node_number.innerText = `Q${this.number}`;
+    node_number.innerText = `Q${number}`;
+
+    // Insert the uploaded asset, if present.
+    switch (kind) {
+        case 1:
+            const img = document.createElement("img");
+            img.src = src;
+            img.width = "200";
+            node_asset.appendChild(img);
+            break;
+        case 2:
+            const audio = document.createElement("audio");
+            audio.src = src;
+            node_asset.appendChild(audio);
+            break;
+        case 3:
+            const video = document.createElement("video");
+            video.src = src;
+            node_asset.appendChild(video);
+            break;
+        default:
+            break;
+    }
 
     // Add event listeners - these all push events straight to the server, to be
     // injected into the quiz once they arrive via polling.
     node_guess.addEventListener("focusin", (e) => {
         this.quiz.push({
             "kind": EVENT_FOCUSIN,
-            "question": this.number,
+            "question": number,
             "data": {},
         });
         e.stopPropagation()
@@ -106,7 +128,7 @@ Question.prototype.dom_insert = function () {
     node_guess.addEventListener("focusout", (e) => {
         this.quiz.push({
             "kind": EVENT_FOCUSOUT,
-            "question": this.number,
+            "question": number,
             "data": {},
         });
         e.stopPropagation()
@@ -114,7 +136,7 @@ Question.prototype.dom_insert = function () {
     node_guess.addEventListener("change", (e) => {
         this.quiz.push({
             "kind": EVENT_CHANGE,
-            "question": this.number,
+            "question": number,
             "data": {
                 "guess": node_guess.value,
             },

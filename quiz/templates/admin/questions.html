@@ -76,7 +76,7 @@
           </td>
           <td>
             {% if question.kind == 1 %}
-            <img width="100px" src="{{ url_for('assets', quizid=quizid, asset=question.filename) }}">
+            <img width="100px" src="{{ url_for('assets', quizid=quizid, filename=question.filename) }}">
             {% endif %}
           </td>
         </tr>

@@ -3,9 +3,9 @@ from ..quiz import Quiz
 from .. import app
 
 
-@app.route("/<quizid>/assets/<asset>")
-def assets(quizid, asset):
+@app.route("/<quizid>/assets/<filename>")
+def assets(quizid, filename):
     quiz = Quiz.get(quizid)
     return send_from_directory(
-        quiz.assets, asset, mimetype=quiz.get_asset_mimetype(asset)
+        quiz.assets, filename, mimetype=quiz.get_asset_mimetype(filename)
     )

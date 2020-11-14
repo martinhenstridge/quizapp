@@ -19,12 +19,27 @@ def run(quizid):
 
 @app.route("/<quizid>/admin/run/ask", methods=["POST"])
 def run_ask(quizid):
+    quiz = Quiz.get(quizid)
     number = request.form["number"]
 
-    quiz = Quiz.get(quizid)
     quiz.update_question_state(number, 1)
-    text = quiz.get_question_text(number)
-    quiz.add_event(1, 0, "_", number, {"text": text})
+
+    question = quiz.get_question(number)
+    if question.kind == 0:
+        src = None
+    else:
+        src = url_for("assets", quizid=quizid, filename=question.filename)
+    quiz.add_event(
+        1,
+        0,
+        "_",
+        number,
+        {
+            "kind": question.kind,
+            "text": question.text,
+            "src": src,
+        },
+    )
 
     dest = url_for("run", quizid=quizid)
     return redirect(dest)
@@ -32,10 +47,11 @@ def run_ask(quizid):
 
 @app.route("/<quizid>/admin/run/lock", methods=["POST"])
 def run_lock(quizid):
+    quiz = Quiz.get(quizid)
     number = request.form["number"]
 
-    quiz = Quiz.get(quizid)
     quiz.update_question_state(number, 2)
+
     quiz.add_event(5, 0, "_", number, {})
 
     dest = url_for("run", quizid=quizid)
@@ -44,12 +60,13 @@ def run_lock(quizid):
 
 @app.route("/<quizid>/admin/run/reveal", methods=["POST"])
 def run_reveal(quizid):
+    quiz = Quiz.get(quizid)
     number = request.form["number"]
 
-    quiz = Quiz.get(quizid)
     quiz.update_question_state(number, 3)
-    answer = quiz.get_question_answer(number)
-    quiz.add_event(6, 0, "_", number, {"answer": answer})
+
+    question = quiz.get_question(number)
+    quiz.add_event(6, 0, "_", number, {"answer": question.answer})
 
     dest = url_for("run", quizid=quizid)
     return redirect(dest)

@@ -52,8 +52,8 @@ def _questions_add(quizid):
     answer = request.form["answer"]
 
     # @@@ check that file not uploaded for text questions.
-    if "file" in request.files:
-        fs = request.files["file"]
+    fs = request.files["file"]
+    if fs.filename != "":
         filename, mimetype = process_upload(quiz, fs)
     else:
         filename = None
