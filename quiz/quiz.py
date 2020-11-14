@@ -7,34 +7,45 @@ class Quiz:
 
     STORAGE: str
 
-    def __init__(self, quizid, storage, conn):
+    def __init__(self, quizid, dbfile, assets, conn):
         self.quizid = quizid
-        self.storage = storage
+        self.dbfile = dbfile
+        self.assets = assets
         self.conn = conn
 
     @classmethod
-    def _storage(cls, quizid):
-        return os.path.join(cls.STORAGE, quizid)
+    def _dbfile(cls, quizid):
+        path = os.path.join(cls.STORAGE, quizid, "database")
+        return os.path.abspath(path)
 
     @classmethod
-    def _connect(cls, storage):
-        dbpath = os.path.join(storage, "db")
-        conn = sqlite3.connect(dbpath)
+    def _assets(cls, quizid):
+        path = os.path.join(cls.STORAGE, quizid, "assets")
+        return os.path.abspath(path)
+
+    @classmethod
+    def _connect(cls, dbfile):
+        conn = sqlite3.connect(dbfile)
         conn.execute("PRAGMA foreign_keys = 1")
         return conn
 
     @classmethod
     def get(cls, quizid):
-        storage = cls._storage(quizid)
-        conn = cls._connect(storage)
-        return cls(quizid, storage, conn)
+        dbfile = cls._dbfile(quizid)
+        assets = cls._assets(quizid)
+        conn = cls._connect(dbfile)
+        return cls(quizid, dbfile, assets, conn)
 
     @classmethod
     def new(cls, quizid):
-        # Create the quiz storage directory first.
-        storage = cls._storage(quizid)
-        os.makedirs(storage, exist_ok=True)
-        conn = cls._connect(storage)
+        dbfile = cls._dbfile(quizid)
+        assets = cls._assets(quizid)
+
+        # Ensure the directory structure is in place before attempting to
+        # connect to (read: create) the database.
+        os.makedirs(assets, exist_ok=True)
+        conn = cls._connect(dbfile)
+
         with conn:
             conn.executescript(
                 """
@@ -65,7 +76,7 @@ class Quiz:
                 INSERT INTO teams(number, notes) VALUES (0, "");
             """
             )
-        return cls(quizid, storage, conn)
+        return cls(quizid, dbfile, assets, conn)
 
     @property
     def teams(self):

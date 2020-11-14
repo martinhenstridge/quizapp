@@ -1,1 +1,1 @@
-from . import admin, join, new, play, whoami
+from . import admin, assets, join, new, play, whoami

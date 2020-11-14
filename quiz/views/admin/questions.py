@@ -30,7 +30,7 @@ def process_upload(
         return None, None
 
     filename = calculate_checksum(fs)
-    with open(os.path.join(quiz.storage, filename), "wb") as fd:
+    with open(os.path.join(quiz.assets, filename), "wb") as fd:
         fs.save(fd)
     return filename, fs.mimetype
 
