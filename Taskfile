@@ -9,7 +9,7 @@ function fmt {
     venv/bin/black quiz
 }
 
-function devserver {
+function serve {
     FLASK_APP=quiz \
     FLASK_ENV=development \
     venv/bin/flask run

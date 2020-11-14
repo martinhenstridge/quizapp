@@ -50,10 +50,14 @@ class Quiz:
         with conn:
             conn.executescript(
                 """
+                -- Table: teams
                 CREATE TABLE IF NOT EXISTS teams (
                     number INTEGER PRIMARY KEY,
                     notes TEXT NOT NULL
                 );
+                INSERT INTO teams(number, notes) VALUES (0, "");
+
+                -- Table: questions
                 CREATE TABLE IF NOT EXISTS questions (
                     number INTEGER PRIMARY KEY,
                     state INTEGER NOT NULL,
@@ -64,6 +68,9 @@ class Quiz:
                     mimetype TEXT,
                     CHECK (kind = 0 OR (filename IS NOT NULL AND mimetype IS NOT NULL))
                 );
+                CREATE INDEX index_filename ON questions(filename);
+
+                -- Table: events
                 CREATE TABLE IF NOT EXISTS events (
                     seqnum INTEGER PRIMARY KEY,
                     team INTEGER NOT NULL,
@@ -74,7 +81,6 @@ class Quiz:
                     FOREIGN KEY(team) REFERENCES teams(number),
                     FOREIGN KEY(question) REFERENCES questions(number)
                 );
-                INSERT INTO teams(number, notes) VALUES (0, "");
             """
             )
         return cls(quizid, dbfile, assets, conn)
@@ -210,5 +216,12 @@ class Quiz:
         with self.conn as conn:
             cur = conn.execute(
                 "SELECT answer FROM questions WHERE number = ?", (number,)
+            )
+            return cur.fetchone()[0]
+
+    def get_asset_mimetype(self, filename):
+        with self.conn as conn:
+            cur = conn.execute(
+                "SELECT mimetype FROM questions WHERE filename = ?", (filename,)
             )
             return cur.fetchone()[0]
