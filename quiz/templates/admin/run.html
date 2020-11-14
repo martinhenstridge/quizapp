@@ -25,17 +25,17 @@
       <tbody>
         {% for question in questions %}
         <tr>
-          <td>{{ question[0] }}</td>
-          <td>{{ question[2] }}</td>
-          <td>{{ question[3] }}</td>
+          <td>{{ question.number }}</td>
+          <td>{{ question.text }}</td>
+          <td>{{ question.answer }}</td>
           <td>
             <form method="POST">
-              <input type="hidden" name="number" value="{{ question[0] }}">
-              {% if question[1] == 0 %}
+              <input type="hidden" name="number" value="{{ question.number }}">
+              {% if question.state == 0 %}
               <input type="submit" formaction="{{ url_for('run_ask', quizid=quizid) }}" value="ask">
-              {% elif question[1] == 1 %}
+              {% elif question.state == 1 %}
               <input type="submit" formaction="{{ url_for('run_lock', quizid=quizid) }}" value="lock">
-              {% elif question[1] == 2 %}
+              {% elif question.state == 2 %}
               <input type="submit" formaction="{{ url_for('run_reveal', quizid=quizid) }}" value="reveal">
               {% else %}
               --

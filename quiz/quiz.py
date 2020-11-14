@@ -1,6 +1,7 @@
 import os
 import json
 import sqlite3
+from .question import Question
 
 
 class Quiz:
@@ -180,9 +181,25 @@ class Quiz:
     def questions(self):
         with self.conn as conn:
             cur = conn.execute(
-                "SELECT number, state, text, answer FROM questions ORDER BY number"
+                """
+                SELECT
+                  number,
+                  state,
+                  kind,
+                  text,
+                  answer,
+                  filename,
+                  mimetype
+                FROM
+                  questions
+                ORDER BY
+                  number
+                """
             )
-            return cur.fetchall()
+            return [
+                Question(row[0], row[1], row[2], row[3], row[4], row[5], row[6])
+                for row in cur.fetchall()
+            ]
 
     def get_question_text(self, number):
         with self.conn as conn:
