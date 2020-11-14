@@ -1,26 +1,40 @@
+import os
 import json
 import sqlite3
 
 
 class Quiz:
-    def __init__(self, quizid, conn):
+
+    STORAGE: str
+
+    def __init__(self, quizid, storage, conn):
         self.quizid = quizid
+        self.storage = storage
         self.conn = conn
 
-    @staticmethod
-    def connection(quizid):
-        conn = sqlite3.connect(f"db.{quizid}")
+    @classmethod
+    def _storage(cls, quizid):
+        return os.path.join(cls.STORAGE, quizid)
+
+    @classmethod
+    def _connect(cls, storage):
+        dbpath = os.path.join(storage, "db")
+        conn = sqlite3.connect(dbpath)
         conn.execute("PRAGMA foreign_keys = 1")
         return conn
 
     @classmethod
     def get(cls, quizid):
-        conn = cls.connection(quizid)
-        return cls(quizid, conn)
+        storage = cls._storage(quizid)
+        conn = cls._connect(storage)
+        return cls(quizid, storage, conn)
 
     @classmethod
     def new(cls, quizid):
-        conn = cls.connection(quizid)
+        # Create the quiz storage directory first.
+        storage = cls._storage(quizid)
+        os.makedirs(storage, exist_ok=True)
+        conn = cls._connect(storage)
         with conn:
             conn.executescript(
                 """
@@ -30,13 +44,13 @@ class Quiz:
                 );
                 CREATE TABLE IF NOT EXISTS questions (
                     number INTEGER PRIMARY KEY,
-                    state INTEGER NOT NULL DEFAULT 0,
-                    type INTEGER NOT NULL,
+                    state INTEGER NOT NULL,
+                    kind INTEGER NOT NULL,
                     text TEXT NOT NULL,
-                    file TEXT,
-                    mime TEXT,
                     answer TEXT NOT NULL,
-                    CHECK (type = 0 OR (file IS NOT NULL AND mime IS NOT NULL))
+                    filename TEXT,
+                    mimetype TEXT,
+                    CHECK (kind = 0 OR (filename IS NOT NULL AND mimetype IS NOT NULL))
                 );
                 CREATE TABLE IF NOT EXISTS events (
                     seqnum INTEGER PRIMARY KEY,
@@ -51,7 +65,7 @@ class Quiz:
                 INSERT INTO teams(number, notes) VALUES (0, "");
             """
             )
-        return cls(quizid, conn)
+        return cls(quizid, storage, conn)
 
     @property
     def teams(self):
@@ -74,11 +88,17 @@ class Quiz:
         with self.conn as conn:
             conn.execute("DELETE FROM teams WHERE number = ?", (number,))
 
-    def add_question(self, text, answer):
+    def add_question(self, kind, text, answer, filename, mimetype):
         with self.conn as conn:
             conn.execute(
-                "INSERT INTO questions(type, text, answer) VALUES (0, ?, ?)",
-                (text, answer),
+                """
+                INSERT INTO
+                  questions
+                  (state, kind, text, answer, filename, mimetype)
+                VALUES
+                  (0, ?, ?, ?, ?, ?)
+                """,
+                (kind, text, answer, filename, mimetype),
             )
 
     def update_question_text(self, number, text):

@@ -13,6 +13,33 @@
       <li><a href="{{ url_for('edit_questions', quizid=quizid) }}">Edit questions</a></li>
       <li><a href="{{ url_for('run', quizid=quizid) }}">Run quiz</a></li>
     </ul>
+    <div>
+      <h3>Add question</h3>
+      <form method="POST" action="add" enctype="multipart/form-data">
+        <input type="radio" id="text" name="kind" value="0" checked>
+        <label for="text">text</label>
+        <br>
+        <input type="radio" id="image" name="kind" value="1">
+        <label for="image">image</label>
+        <br>
+        <input type="radio" id="audio" name="kind" value="2">
+        <label for="audio">audio</label>
+        <br>
+        <input type="radio" id="video" name="kind" value="3">
+        <label for="video">video</label>
+        <br>
+        <input type="text" id="text" name="text" required>
+        <label for="text">question</label>
+        <br>
+        <input type="text" id="answer" name="answer" required>
+        <label for="answer">answer</label>
+        <br>
+        <input type="file" id="file" name="file">
+        <label for="file">file</label>
+        <br>
+        <input type="submit" value="Add">
+      </form>
+    </div>
     <table>
       <thead>
         <tr>
@@ -51,38 +78,6 @@
         </tr>
         {% endfor %}
       </tbody>
-      <tfoot>
-        <tr>
-          <td>
-            <input form="add" type="submit" value="+">
-          </td>
-          <td>
-          </td>
-          <td>
-            <input form="add" type="text" name="text" required>
-          </td>
-          <td>
-            <input form="add" type="text" name="answer" required>
-          </td>
-          <td></td>
-        </tr>
-        <tr>
-          <td></td>
-          <td></td>
-          <td colspan="2">
-            <form method="POST" action="add" id="add">
-              <input type="radio" id="text" name="contact" value="text" checked>
-              <label for="text">text</label>
-              <input type="radio" id="image" name="contact" value="image">
-              <label for="image">image</label>
-              <input type="radio" id="audio" name="contact" value="audio">
-              <label for="audio">audio</label>
-              <input type="radio" id="video" name="contact" value="video">
-              <label for="video">video</label>
-            </form>
-          </td>
-        </tr>
-      </tfoot>
     </table>
   </body>
 </html>
