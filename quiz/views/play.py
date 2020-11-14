@@ -1,3 +1,4 @@
+import json
 from flask import jsonify, redirect, render_template, request, session, url_for
 from ..quiz import Quiz
 from .. import app
@@ -25,11 +26,11 @@ def events(quizid):
     if request.method == "POST":
         data = request.json
         quiz.add_event(
+            data["question"],
             data["kind"],
+            json.dumps(data["data"]),
             session["team"],
             session["player"],
-            data["question"],
-            data["data"],
         )
         return ""
 

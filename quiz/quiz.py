@@ -1,44 +1,49 @@
+from __future__ import annotations
 import os
 import json
 import sqlite3
-from .question import Question
+from typing import Dict, List, Optional, Tuple, Union
+from .event import EventKind
+from .question import Question, QuestionKind, QuestionState
 
 
 class Quiz:
 
     STORAGE: str
 
-    def __init__(self, quizid, dbfile, assets, conn):
+    def __init__(
+        self, quizid: str, dbfile: str, assets: str, conn: sqlite3.Connection
+    ) -> None:
         self.quizid = quizid
         self.dbfile = dbfile
         self.assets = assets
         self.conn = conn
 
     @classmethod
-    def _dbfile(cls, quizid):
+    def _dbfile(cls, quizid: str) -> str:
         path = os.path.join(cls.STORAGE, quizid, "database")
         return os.path.abspath(path)
 
     @classmethod
-    def _assets(cls, quizid):
+    def _assets(cls, quizid: str) -> str:
         path = os.path.join(cls.STORAGE, quizid, "assets")
         return os.path.abspath(path)
 
     @classmethod
-    def _connect(cls, dbfile):
+    def _connect(cls, dbfile: str) -> sqlite3.Connection:
         conn = sqlite3.connect(dbfile)
         conn.execute("PRAGMA foreign_keys = 1")
         return conn
 
     @classmethod
-    def get(cls, quizid):
+    def get(cls, quizid: str) -> Quiz:
         dbfile = cls._dbfile(quizid)
         assets = cls._assets(quizid)
         conn = cls._connect(dbfile)
         return cls(quizid, dbfile, assets, conn)
 
     @classmethod
-    def new(cls, quizid):
+    def new(cls, quizid: str) -> Quiz:
         dbfile = cls._dbfile(quizid)
         assets = cls._assets(quizid)
 
@@ -52,116 +57,144 @@ class Quiz:
                 """
                 -- Table: teams
                 CREATE TABLE IF NOT EXISTS teams (
-                    number INTEGER PRIMARY KEY,
-                    notes TEXT NOT NULL
+                  number INTEGER PRIMARY KEY,
+                  notes TEXT NOT NULL
                 );
                 INSERT INTO teams(number, notes) VALUES (0, "");
 
                 -- Table: questions
                 CREATE TABLE IF NOT EXISTS questions (
-                    number INTEGER PRIMARY KEY,
-                    state INTEGER NOT NULL,
-                    kind INTEGER NOT NULL,
-                    text TEXT NOT NULL,
-                    answer TEXT NOT NULL,
-                    filename TEXT,
-                    mimetype TEXT,
-                    CHECK (kind = 0 OR (filename IS NOT NULL AND mimetype IS NOT NULL))
+                  number INTEGER PRIMARY KEY,
+                  state INTEGER NOT NULL,
+                  kind INTEGER NOT NULL,
+                  text TEXT NOT NULL,
+                  answer TEXT NOT NULL,
+                  filename TEXT,
+                  mimetype TEXT,
+                  CHECK (kind = 0 OR (filename IS NOT NULL AND mimetype IS NOT NULL))
                 );
                 CREATE INDEX index_filename ON questions(filename);
 
                 -- Table: events
                 CREATE TABLE IF NOT EXISTS events (
-                    seqnum INTEGER PRIMARY KEY,
-                    team INTEGER NOT NULL,
-                    player TEXT NOT NULL,
-                    kind INTEGER NOT NULL,
-                    question INTEGER NOT NULL,
-                    data TEXT NOT NULL,
-                    FOREIGN KEY(team) REFERENCES teams(number),
-                    FOREIGN KEY(question) REFERENCES questions(number)
+                  seqnum INTEGER PRIMARY KEY,
+                  question INTEGER NOT NULL,
+                  kind INTEGER NOT NULL,
+                  data TEXT NOT NULL,
+                  team INTEGER NOT NULL,
+                  player TEXT NOT NULL,
+                  FOREIGN KEY(team) REFERENCES teams(number),
+                  FOREIGN KEY(question) REFERENCES questions(number)
                 );
             """
             )
         return cls(quizid, dbfile, assets, conn)
 
     @property
-    def teams(self):
+    def teams(self) -> List[Tuple[str, str]]:
         with self.conn as conn:
             cur = conn.execute("SELECT number, notes FROM teams WHERE number != 0")
             return cur.fetchall()
 
-    def add_team(self, notes):
+    def add_team(self, notes: str) -> None:
         with self.conn as conn:
             conn.execute("INSERT INTO teams(notes) VALUES (?)", (notes,))
 
-    def update_team(self, number, notes):
+    def update_team(self, number: int, notes: str) -> None:
         with self.conn as conn:
             conn.execute(
                 "UPDATE teams SET notes = ? WHERE number = ?",
                 (notes, number),
             )
 
-    def remove_team(self, number):
+    def remove_team(self, number: int) -> None:
         with self.conn as conn:
             conn.execute("DELETE FROM teams WHERE number = ?", (number,))
 
-    def add_question(self, kind, text, answer, filename, mimetype):
+    def add_question(
+        self,
+        kind: QuestionKind,
+        text: str,
+        answer: str,
+        filename: Optional[str],
+        mimetype: Optional[str],
+    ) -> None:
         with self.conn as conn:
             conn.execute(
                 """
                 INSERT INTO
-                  questions
-                  (state, kind, text, answer, filename, mimetype)
+                  questions (
+                    state,
+                    kind,
+                    text,
+                    answer,
+                    filename,
+                    mimetype)
                 VALUES
                   (0, ?, ?, ?, ?, ?)
                 """,
                 (kind, text, answer, filename, mimetype),
             )
 
-    def update_question_text(self, number, text):
+    def update_question_text(self, number: int, text: str) -> None:
         with self.conn as conn:
             conn.execute(
                 "UPDATE questions SET text = ? WHERE number = ?",
                 (text, number),
             )
 
-    def update_question_answer(self, number, answer):
+    def update_question_answer(self, number: int, answer: str) -> None:
         with self.conn as conn:
             conn.execute(
                 "UPDATE questions SET answer = ? WHERE number = ?",
                 (answer, number),
             )
 
-    def update_question_state(self, number, state):
+    def update_question_state(self, number: int, state: QuestionState) -> None:
         with self.conn as conn:
             conn.execute(
                 "UPDATE questions SET state = ? WHERE number = ?",
-                (state, number),
+                (state.value, number),
             )
 
-    def remove_question(self, number):
+    def remove_question(self, number: int) -> None:
         with self.conn as conn:
             conn.execute("DELETE FROM questions WHERE number = ?", (number,))
 
-    def add_event(self, kind, team, player, question, data):
+    def add_event(
+        self,
+        question: int,
+        kind: EventKind,
+        data: Dict[str, Union[int, str]],
+        team: int = 0,
+        player: str = "__quizmaster",
+    ) -> None:
         with self.conn as conn:
             conn.execute(
-                "INSERT INTO events(kind, team, player, question, data) VALUES (?, ?, ?, ?, ?)",
-                (kind, team, player, question, json.dumps(data)),
+                """
+                INSERT INTO
+                  events (
+                    question,
+                    kind,
+                    data,
+                    team,
+                    player)
+                VALUES (?, ?, ?, ?, ?)
+                """,
+                (question, kind.value, json.dumps(data), team, player),
             )
 
-    def get_events_since(self, team, latest):
+    def get_events_since(self, team: int, latest: int) -> List[Dict]:
         with self.conn as conn:
             cur = conn.execute(
                 """
                 SELECT
                   seqnum,
-                  kind,
-                  team,
-                  player,
                   question,
-                  data
+                  kind,
+                  data,
+                  team,
+                  player
                 FROM
                   events
                 WHERE
@@ -174,17 +207,17 @@ class Quiz:
             return [
                 {
                     "seqnum": row[0],
-                    "kind": row[1],
-                    "team": row[2],
-                    "player": row[3],
-                    "question": row[4],
-                    "data": json.loads(row[5]),
+                    "question": row[1],
+                    "kind": row[2],
+                    "data": json.loads(row[3]),
+                    "team": row[4],
+                    "player": row[5],
                 }
                 for row in cur.fetchall()
             ]
 
     @property
-    def questions(self):
+    def questions(self) -> List[Question]:
         with self.conn as conn:
             cur = conn.execute(
                 """
@@ -203,11 +236,19 @@ class Quiz:
                 """
             )
             return [
-                Question(row[0], row[1], row[2], row[3], row[4], row[5], row[6])
+                Question(
+                    row[0],
+                    QuestionState(row[1]),
+                    QuestionKind(row[2]),
+                    row[3],
+                    row[4],
+                    row[5],
+                    row[6],
+                )
                 for row in cur.fetchall()
             ]
 
-    def get_question(self, number):
+    def get_question(self, number: int) -> Question:
         with self.conn as conn:
             cur = conn.execute(
                 """
@@ -227,9 +268,17 @@ class Quiz:
                 (number,),
             )
             row = cur.fetchone()
-            return Question(row[0], row[1], row[2], row[3], row[4], row[5], row[6])
+            return Question(
+                row[0],
+                QuestionState(row[1]),
+                QuestionKind(row[2]),
+                row[3],
+                row[4],
+                row[5],
+                row[6],
+            )
 
-    def get_asset_mimetype(self, filename):
+    def get_asset_mimetype(self, filename: str) -> str:
         with self.conn as conn:
             cur = conn.execute(
                 "SELECT mimetype FROM questions WHERE filename = ?", (filename,)

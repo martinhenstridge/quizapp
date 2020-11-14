@@ -9,6 +9,10 @@ function fmt {
     venv/bin/black quiz
 }
 
+function type {
+    venv/bin/mypy quiz
+}
+
 function serve {
     FLASK_APP=quiz \
     FLASK_ENV=development \
