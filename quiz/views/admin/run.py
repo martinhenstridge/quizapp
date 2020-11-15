@@ -1,5 +1,6 @@
 from flask import redirect, render_template, request, url_for
 from ...quiz import Quiz
+from ...event import EventKind
 from ...question import QuestionKind, QuestionState
 from ... import app
 
@@ -30,6 +31,7 @@ def run_ask(quizid):
             "kind": question.kind.value,
             "text": question.text,
             "src": src,
+            "mime": question.mimetype,
         },
     )
 

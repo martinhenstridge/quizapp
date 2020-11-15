@@ -28,7 +28,11 @@ Quiz.prototype.inject = function (evt) {
     if (this.questions.has(evt.question)) {
         question = this.questions.get(evt.question);
     } else {
-        question = new Question(this, evt.question, evt.data.kind, evt.data.src);
+        question = new Question(this,
+                                evt.question,
+                                evt.data.kind,
+                                evt.data.src,
+                                evt.data.mime);
         this.questions.set(evt.question, question);
     }
 
@@ -70,17 +74,17 @@ Quiz.prototype.poll = function () {
 }
 
 
-function Question(quiz, number, kind, src) {
+function Question(quiz, number, kind, src, mime) {
     this.quiz = quiz;
     this.open = false;
     this.text = "";
     this.guess = "";
     this.answer = null;
-    this.dom_insert(number, kind, src);
+    this.dom_insert(number, kind, src, mime);
     Object.seal(this);
 }
 
-Question.prototype.dom_insert = function (number, kind, src) {
+Question.prototype.dom_insert = function (number, kind, src, mime) {
     const template = document.getElementById("template_question");
     const clone = template.content.firstElementChild.cloneNode(true);
 
@@ -104,11 +108,15 @@ Question.prototype.dom_insert = function (number, kind, src) {
         case 2:
             const audio = document.createElement("audio");
             audio.src = src;
+            audio.type = mime;
+            audio.controls = true;
             node_asset.appendChild(audio);
             break;
         case 3:
             const video = document.createElement("video");
             video.src = src;
+            video.type = mime;
+            video.controls = true;
             node_asset.appendChild(video);
             break;
         default:

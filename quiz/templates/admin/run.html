@@ -31,12 +31,21 @@
           <td>
             <form method="POST">
               <input type="hidden" name="number" value="{{ question.number }}">
-              {% if question.state == 0 %}
-              <input type="submit" formaction="{{ url_for('run_ask', quizid=quizid) }}" value="ask">
-              {% elif question.state == 1 %}
-              <input type="submit" formaction="{{ url_for('run_lock', quizid=quizid) }}" value="lock">
-              {% elif question.state == 2 %}
-              <input type="submit" formaction="{{ url_for('run_reveal', quizid=quizid) }}" value="reveal">
+              {% if question.state.value == 0 %}
+              <input
+                formaction="{{ url_for('run_ask', quizid=quizid) }}"
+                type="submit"
+                value="ask">
+              {% elif question.state.value == 1 %}
+              <input
+                formaction="{{ url_for('run_lock', quizid=quizid) }}"
+                type="submit"
+                value="lock">
+              {% elif question.state.value == 2 %}
+              <input
+                formaction="{{ url_for('run_reveal', quizid=quizid) }}"
+                type="submit"
+                value="reveal">
               {% else %}
               --
               {% endif %}
