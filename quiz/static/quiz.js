@@ -67,7 +67,13 @@ Quiz.prototype.poll = function () {
 
     fetch(url, request).then(_status).then(_json).then(evts => {
         for (let evt of evts) {
-            this.inject(evt);
+            try {
+                this.inject(evt);
+            } catch (e) {
+                console.log(`Dropping event: ${e}`);
+            }
+            // Count this event has having been seen, otherwise we get stuck in
+            // a loop requesting the same events from the server forever.
             this.latest = evt.seqnum;
         }
     });

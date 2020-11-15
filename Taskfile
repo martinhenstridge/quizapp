@@ -19,6 +19,10 @@ function serve {
     venv/bin/flask run
 }
 
+function deploy {
+    scp -P 722 -i ~/.ssh/id_web -r quiz martinhe@martinhenstridge.uk:/home/martinhe/quiz
+}
+
 function help {
     echo "$0 <task> <args>"
     echo "Tasks:"
