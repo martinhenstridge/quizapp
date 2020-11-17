@@ -17,86 +17,165 @@ function Quiz(selector) {
     Object.seal(this);
 };
 
+Quiz.prototype.inject_events = function (evts) {
+    const prev = new Map(this.questions);
+    for (let evt of evts) {
+        try {
+            this.inject(evt);
+        } catch (exc) {
+            console.log(`Dropping event: ${exc}`);
+        }
+    }
+    const curr = this.questions;
+
+    const ops = [];
+    for (let [n, q] of curr) {
+        if (!Object.is(q, prev.get(n))) {
+            ops.push(n);
+            // calculate required updates, append to 'ops' array
+        }
+    }
+    return ops;
+};
+
 Quiz.prototype.inject = function (evt) {
     console.debug(`event: ${JSON.stringify(evt)}`);
 
-    if (typeof evt.question == "undefined") {
-        throw "Malformed event";
+    if (!Number.isInteger(evt.seqnum)) {
+        throw "Missing or invalid sequence number";
     }
+    this.latest = evt.seqnum;
 
-    let question;
-    if (this.questions.has(evt.question)) {
-        question = this.questions.get(evt.question);
-    } else {
-        question = new Question(this,
-                                evt.question,
-                                evt.data.kind,
-                                evt.data.src,
-                                evt.data.mime);
-        this.questions.set(evt.question, question);
+    if (!Number.isInteger(evt.question)) {
+        throw "Missing or invalid question number";
     }
+    const question = this.questions.get(evt.question);
 
-    question.inject(evt);
-    question.dom_update();
+    const updated = this.update_question(question, evt);
+    this.questions.set(evt.question, updated);
 };
 
-Quiz.prototype.push = function (evt) {
-    const url = "events";
-    const request = {
-        method: "POST",
-        cache: "no-store",
-        credentials: "same-origin",
-        mode: "same-origin",
-        headers: {
-            "Content-Type": "application/json",
-        },
-        body: JSON.stringify(evt),
-    };
-
-    fetch(url, request).then(_status);
-};
-
-Quiz.prototype.poll = function () {
-    const url = `events?since=${this.latest}`;
-    const request = {
-        method: "GET",
-        cache: "no-store",
-        credentials: "same-origin",
-        mode: "same-origin",
-    };
-
-    fetch(url, request).then(_status).then(_json).then(evts => {
-        for (let evt of evts) {
-            try {
-                this.inject(evt);
-            } catch (e) {
-                console.log(`Dropping event: ${e}`);
-            }
-            // Count this event has having been seen, otherwise we get stuck in
-            // a loop requesting the same events from the server forever.
-            this.latest = evt.seqnum;
+Quiz.prototype.update_question = function (question, evt) {
+    if (!Number.isInteger(evt.kind)) {
+        throw "Missing or invalid event kind";
+    }
+    if (question instanceof Question) {
+        if (evt.kind === EVENT_ASK) {
+            throw "Question already asked";
         }
-    });
+    } else {
+        if (evt.kind !== EVENT_ASK) {
+            throw "Question not yet asked";
+        }
+    }
+
+    switch (evt.kind) {
+        case EVENT_ASK:
+            return Question.create(
+                evt.question,
+                evt.data.kind,
+                evt.data.text,
+                evt.data.media,
+            );
+
+        case EVENT_FOCUSIN:
+            if (!question.open) {
+                throw "Question is locked";
+            }
+            if (question.focus) {
+                throw "Question already in focus";
+            }
+            return question.update({"focus": true});
+
+        case EVENT_FOCUSOUT:
+            if (!question.open) {
+                throw "Question is locked";
+            }
+            if (!question.focus) {
+                throw "Question already out of focus";
+            }
+            return question.update({"focus": false});
+
+        case EVENT_CHANGE:
+            if (!question.open) {
+                throw "Question is locked";
+            }
+            return question.update({"guess": evt.data.guess});
+
+        case EVENT_LOCK:
+            if (!question.open) {
+                throw "Question already locked";
+            }
+            return question.update({"open": false, "focus": false});
+
+        case EVENT_REVEAL:
+            if (question.open) {
+                throw "Revealing answer to open question";
+            }
+            return question.update({"answer": evt.data.answer});
+
+        default:
+            throw "Unknown event kind";
+    }
 }
 
+//==============================================================================
 
-function Question(quiz, number, kind, src, mime) {
-    this.quiz = quiz;
-    this.open = false;
-    this.text = "";
-    this.guess = "";
-    this.answer = null;
-    this.dom_insert(number, kind, src, mime);
-    Object.seal(this);
+function Question(number, kind, text, media, open, focus, guess, answer) {
+    this.number = number;
+    this.kind = kind;
+    this.text = text;
+    this.media = media;
+    this.open = open;
+    this.focus = focus;
+    this.guess = guess;
+    this.answer = answer;
 }
 
-Question.prototype.dom_insert = function (number, kind, src, mime) {
+Question.create = function (number, kind, text, media) {
+    const created = new Question(number, kind, text, media, true, false, "", null);
+    Object.freeze(created);
+    return created;
+};
+
+Question.prototype.update = function (updates) {
+    const copy = new Question(
+        this.number,
+        this.kind,
+        this.text,
+        this.media,
+        this.open,
+        this.focus,
+        this.guess,
+        this.answer,
+    );
+    Object.assign(copy, updates);
+    Object.freeze(copy);
+    return copy;
+};
+
+Question.prototype.toJSON = function () {
+    return {
+        "number": this.number,
+        "kind": this.kind,
+        "text": this.text,
+        "media": this.media,
+        "open": this.open,
+        "focus": this.focus,
+        "guess": this.guess,
+        "answer": this.answer,
+    };
+};
+
+//==============================================================================
+
+function DomNode(number, kind, media) {
     const template = document.getElementById("template_question");
     const clone = template.content.firstElementChild.cloneNode(true);
 
     const node_number = clone.querySelector(".question_number");
     const node_text = clone.querySelector(".question_text");
-    const node_asset = clone.querySelector(".question_asset");
+    const node_asset = clone.querySelector(".question_media");
     const node_guess = clone.querySelector(".question_guess");
     const node_answer = clone.querySelector(".question_answer");
 
@@ -129,7 +208,7 @@ Question.prototype.dom_insert = function (number, kind, src, mime) {
             break;
     }
 
-    // Add event listeners - these all push events straight to the server, to be
+            // Add event listeners - these all push events straight to the server, to be
     // injected into the quiz once they arrive via polling.
     node_guess.addEventListener("focusin", (e) => {
         this.quiz.push({
@@ -157,7 +236,7 @@ Question.prototype.dom_insert = function (number, kind, src, mime) {
         });
         e.stopPropagation()
     });
-    
+
     // Store interesting child nodes for future reference.
     this.node_text = node_text;
     this.node_guess = node_guess;
@@ -167,77 +246,63 @@ Question.prototype.dom_insert = function (number, kind, src, mime) {
     this.quiz.node.appendChild(clone);
 }
 
-Question.prototype.dom_update = function () {
-    this.node_text.innerText = this.text;
+//==============================================================================
 
-    // Only update guess field if not currently in focus.
-    if (this.node_guess !== document.activeElement) {
-        this.node_guess.value = this.guess;
-        this.node_guess.disabled = !this.open;
-    }
+let quiz = new Quiz("#quiz");
+let ops;
 
-    if (this.answer === null) {
-        this.node_answer.hidden = true;
-        this.node_answer.innerText = "";
-    } else {
-        this.node_answer.hidden = false;
-        this.node_answer.innerText = this.answer;
-    }
+ops = quiz.inject_events([
+    {
+        "seqnum":1,"kind":1,"question":1,
+        "data":{"kind":0,"text":"Text question","media":null},
+    },
+    {
+        "seqnum":2,"kind":1,"question":2,
+        "data":{"kind":1,"text":"Image question","media":{"src":"url","mime":"image/jpeg"}},
+    },
+    {
+        "seqnum":3,"kind":1,"question":3,
+        "data":{"kind":2,"text":"Audio question","media":{"src":"url","mime":"audio/mpeg"}},
+    },
+    {
+        "seqnum":4,"kind":1,"question":4,
+        "data":{"kind":3,"text":"Video question","media":{"src":"url","mime":"video/mpeg"}},
+    },
+]);
+console.log(ops);
+
+ops = quiz.inject_events([
+    {
+        "seqnum":5,"kind":2,"question":1,
+        "data":{},
+    },
+    {
+        "seqnum":6,"kind":4,"question":1,
+        "data":{"guess":"bar"},
+    },
+    {
+        "seqnum":7,"kind":2,"question":3,
+        "data":{},
+    },
+    {
+        "seqnum":8,"kind":3,"question":3,
+        "data":{"guess":"bar"},
+    },
+    {
+        "seqnum":9,"kind":5,"question":4,
+        "data":{},
+    },
+    {
+        "seqnum":10,"kind":6,"question":4,
+        "data":{"answer":"stuff here"},
+    },
+    {
+        "seqnum":11,"kind":6,"question":1,
+        "data":{"answer":"stuff here"},
+    },
+]);
+console.log(ops);
+
+for (let [n, q] of quiz.questions) {
+    console.log(`${n}: ${JSON.stringify(q, null, 4)}`);
 }
-
-Question.prototype.inject = function (evt) {
-    switch (evt.kind) {
-        case EVENT_ASK:
-            if (this.open) throw "Question already asked";
-            this.open = true;
-            this.text = evt.data.text;
-            break;
-
-        case EVENT_FOCUSIN:
-            break;
-
-        case EVENT_FOCUSOUT:
-            break;
-
-        case EVENT_CHANGE:
-            if (!this.open) throw "Question is locked";
-            this.guess = evt.data.guess;
-            break;
-
-        case EVENT_LOCK:
-            if (!this.open) throw "Question already locked";
-            this.open = false;
-            break;
-
-        case EVENT_REVEAL:
-            if (this.open) throw "Revealing answer to open question";
-            this.answer = evt.data.answer;
-            break;
-
-        default:
-            throw "Unknown event type";
-    }
-}
-
-
-function _status(msg) {
-    if (msg.status >= 200 && msg.status < 300) {
-        return Promise.resolve(msg);
-    } else {
-        console.log(msg);
-        return Promise.reject(new Error(msg.statusText));
-    }
-}
-
-
-function _json(msg) {
-    return msg.json()
-}
-
-
-function main() {
-    let quiz = new Quiz("div#quiz");
-    setInterval(function () { quiz.poll(); }, 1000);
-}
-
-main();
