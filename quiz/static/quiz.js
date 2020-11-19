@@ -9,6 +9,11 @@ const EVENT_CHANGE   = 4;
 const EVENT_LOCK     = 5;
 const EVENT_REVEAL   = 6;
 
+// Media
+const MEDIA_IMAGE = 1;
+const MEDIA_AUDIO = 2;
+const MEDIA_VIDEO = 3;
+
 
 function Quiz(selector) {
     this.latest = 0;
@@ -169,49 +174,52 @@ Question.prototype.toJSON = function () {
 
 //==============================================================================
 
-function DomNode(number, kind, media) {
-    const template = document.getElementById("template_question");
-    const clone = template.content.firstElementChild.cloneNode(true);
+function DomNode(quiz, number, kind, text, media) {
+    const template = document.getElementById("__template");
+    const node_question = template.content.firstElementChild.cloneNode(true);
 
-    const node_number = clone.querySelector(".question_number");
-    const node_text = clone.querySelector(".question_text");
-    const node_asset = clone.querySelector(".question_media");
-    const node_guess = clone.querySelector(".question_guess");
-    const node_answer = clone.querySelector(".question_answer");
+    const node_number = node_question.querySelector(".__number");
+    const node_text = node_question.querySelector(".__text");
+    const node_media = node_question.querySelector(".__media");
+    const node_guess = node_question.querySelector(".__guess");
+    const node_answer = node_question.querySelector(".__answer");
 
-    // Write the question number.
+    // Write the question number and text - these are static over the lifetime
+    // of the question.
     node_number.innerText = `Q${number}`;
+    node_text.innerText = text;
 
-    // Insert the uploaded asset, if present.
+    // Insert any associated media.
     switch (kind) {
-        case 1:
-            const img = document.createElement("img");
-            img.src = src;
-            img.width = "200";
-            node_asset.appendChild(img);
+        case MEDIA_IMAGE:
+            const image = document.createElement("img");
+            image.src = media.src;
+            image.width = "200";
+            node_media.appendChild(image);
             break;
-        case 2:
+        case MEDIA_AUDIO:
             const audio = document.createElement("audio");
-            audio.src = src;
-            audio.type = mime;
+            audio.src = media.src;
+            audio.type = media.mime;
             audio.controls = true;
-            node_asset.appendChild(audio);
+            node_media.appendChild(audio);
             break;
-        case 3:
+        case MEDIA_VIDEO:
             const video = document.createElement("video");
-            video.src = src;
-            video.type = mime;
+            video.src = media.src;
+            video.type = media.mime;
+            video.width = "200";
             video.controls = true;
-            node_asset.appendChild(video);
+            node_media.appendChild(video);
             break;
         default:
             break;
     }
 
-            // Add event listeners - these all push events straight to the server, to be
+    // Add event listeners - these all push events straight to the server, to be
     // injected into the quiz once they arrive via polling.
     node_guess.addEventListener("focusin", (e) => {
-        this.quiz.push({
+        quiz.push({
             "kind": EVENT_FOCUSIN,
             "question": number,
             "data": {},
@@ -219,7 +227,7 @@ function DomNode(number, kind, media) {
         e.stopPropagation()
     });
     node_guess.addEventListener("focusout", (e) => {
-        this.quiz.push({
+        quiz.push({
             "kind": EVENT_FOCUSOUT,
             "question": number,
             "data": {},
@@ -227,7 +235,7 @@ function DomNode(number, kind, media) {
         e.stopPropagation()
     });
     node_guess.addEventListener("change", (e) => {
-        this.quiz.push({
+        quiz.push({
             "kind": EVENT_CHANGE,
             "question": number,
             "data": {
@@ -237,13 +245,10 @@ function DomNode(number, kind, media) {
         e.stopPropagation()
     });
 
-    // Store interesting child nodes for future reference.
-    this.node_text = node_text;
-    this.node_guess = node_guess;
-    this.node_answer = node_answer;
-
-    // Finally, add the new question element into the DOM.
-    this.quiz.node.appendChild(clone);
+    // Store interesting children for future reference.
+    this.question = node_question;
+    this.guess = node_guess;
+    this.answer = node_answer;
 }
 
 //==============================================================================
