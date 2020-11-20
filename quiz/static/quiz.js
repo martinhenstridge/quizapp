@@ -74,8 +74,8 @@ Quiz.prototype.update_external = function () {
         }
         domnode.domproxy = domproxy;
 
-        console.log(`Q${number} update operations:`);
-        console.log(JSON.stringify(ops));
+        console.log(`Q${number} state: ${JSON.stringify(question)}`);
+        console.log(`Q${number} updates: ${JSON.stringify(ops)}`);
     }
 };
 

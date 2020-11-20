@@ -149,11 +149,10 @@ function DomNode(quiz, question) {
     });
 
     node_guess.addEventListener("input", (e) => {
-        alert(`${JSON.stringify(question)}`);
         quiz.update([{
             "kind": EVENT_LOCAL_EDIT,
-            "question": question.number,
             "data": {
+                "question": question.number,
                 "guess": e.target.value,
             },
         }]);
