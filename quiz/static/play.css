@@ -13,11 +13,11 @@ div.question {
   margin: 8px 0px 8px 0px;
 }
 
-div.question_number {
+div.__number {
   padding: 8px;
 }
 
-div.question_answer {
+div.__answer {
   border-width: 1px;
   border-radius: 8px;
   padding: 8px;

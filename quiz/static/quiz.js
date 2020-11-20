@@ -2,45 +2,51 @@
 
 
 // Incoming events from server
-const EVENT_INCOMING_JOIN   = 101;
-const EVENT_INCOMING_ASK    = 102;
-const EVENT_INCOMING_FOCUS  = 103;
-const EVENT_INCOMING_BLUR   = 104;
-const EVENT_INCOMING_GUESS  = 105;
-const EVENT_INCOMING_LOCK   = 106;
-const EVENT_INCOMING_REVEAL = 107;
+const EVENT_INCOMING_JOIN   = "E/incoming-join";
+const EVENT_INCOMING_ASK    = "E/incoming-ask";
+const EVENT_INCOMING_FOCUS  = "E/incoming-focus";
+const EVENT_INCOMING_BLUR   = "E/incoming-blur";
+const EVENT_INCOMING_GUESS  = "E/incoming-guess";
+const EVENT_INCOMING_LOCK   = "E/incoming-lock";
+const EVENT_INCOMING_REVEAL = "E/incoming-reveal";
 
 // Locally generated events
-const EVENT_LOCAL_FOCUS          = 111;
-const EVENT_LOCAL_BLUR           = 112;
-const EVENT_LOCAL_EDIT           = 113;
-const EVENT_LOCAL_DISCARD        = 114;
-const EVENT_LOCAL_SUBMIT_SEND    = 115;
-const EVENT_LOCAL_SUBMIT_SUCCESS = 116;
-const EVENT_LOCAL_SUBMIT_FAILURE = 117;
+const EVENT_LOCAL_FOCUS          = "E/local-focus";
+const EVENT_LOCAL_BLUR           = "E/local-blur";
+const EVENT_LOCAL_EDIT           = "E/local-edit";
+const EVENT_LOCAL_DISCARD        = "E/local-discard";
+const EVENT_LOCAL_SUBMIT_SEND    = "E/local-submit-send";
+const EVENT_LOCAL_SUBMIT_SUCCESS = "E/local-submit-success";
+const EVENT_LOCAL_SUBMIT_FAILURE = "E/local-submit-failure";
 
 // Guess input states
-const STATE_OPEN = 101;
-const STATE_EDITING = 102
-const STATE_SYNCING = 103;
-const STATE_LOCKED = 104;
+const STATE_OPEN    = "S/open";
+const STATE_EDITING = "S/editing";
+const STATE_SYNCING = "S/syncing";
+const STATE_LOCKED  = "S/locked";
 
 // Media
-const MEDIA_IMAGE = 1;
-const MEDIA_AUDIO = 2;
-const MEDIA_VIDEO = 3;
+const MEDIA_IMAGE = "M/image";
+const MEDIA_AUDIO = "M/audio";
+const MEDIA_VIDEO = "M/video";
 
 
 function Quiz(selector) {
     this.latest = 0;
     this.node = document.querySelector(selector);
     this.questions = new Map();
-    this.domstate = new Map();
+    this.domnodes = new Map();
     Object.seal(this);
 };
 
 
 Quiz.prototype.update = function (evts) {
+    this.update_internal(evts);
+    this.update_external();
+};
+
+
+Quiz.prototype.update_internal = function (evts) {
     for (let evt of evts) {
         try {
             this.inject(evt);
@@ -48,24 +54,38 @@ Quiz.prototype.update = function (evts) {
             console.log(`Dropping event: ${exc}`);
         }
     }
+};
 
-    for (let [n, q] of this.questions) {
-        let olddom = this.domstate.get(n);
-        let newdom = new DomState(q);
-        let ops = newdom.calculate_updates(olddom);
-        console.log(`Q${n} update operations:`);
+
+Quiz.prototype.update_external = function () {
+    let domnode;
+    for (let [number, question] of this.questions) {
+        if (this.domnodes.has(number)) {
+            domnode = this.domnodes.get(number);
+        } else {
+            domnode = new DomNode(this, question);
+            this.domnodes.set(number, domnode);
+        }
+
+        const domproxy = new DomProxy(question);
+        const ops = domproxy.calculate_updates(domnode.domproxy);
+        for (let op of ops) {
+            domnode.update(quiz, question, op.kind, op.data);
+        }
+        domnode.domproxy = domproxy;
+
+        console.log(`Q${number} update operations:`);
         console.log(JSON.stringify(ops));
-        this.domstate.set(n, newdom);
     }
 };
 
 
 Quiz.prototype.inject = function (evt) {
-    console.debug(`event: ${JSON.stringify(evt)}`);
+    console.log(`event: ${JSON.stringify(evt)}`);
 
-    if (!Number.isInteger(evt.kind)) {
-        throw "Missing or invalid event kind";
-    }
+    //if (!Number.isInteger(evt.kind)) {
+    //    throw "Missing or invalid event kind";
+    //}
 
     switch (evt.kind) {
         // Incoming events.
@@ -290,7 +310,7 @@ Quiz.prototype.handle_local_discard = function (data) {
             throw "Question is locked";
         case STATE_SYNCING:
             throw "Syncing in progress";
-        case STATE_EDIT:
+        case STATE_EDITING:
             throw "Editing in progress";
     }
 
