@@ -1,13 +1,29 @@
 "use strict";
 
 
-// Events
-const EVENT_ASK      = 1;
-const EVENT_FOCUSIN  = 2;
-const EVENT_FOCUSOUT = 3;
-const EVENT_CHANGE   = 4;
-const EVENT_LOCK     = 5;
-const EVENT_REVEAL   = 6;
+// Incoming events from server
+const EVENT_INCOMING_JOIN   = 101;
+const EVENT_INCOMING_ASK    = 102;
+const EVENT_INCOMING_FOCUS  = 103;
+const EVENT_INCOMING_BLUR   = 104;
+const EVENT_INCOMING_GUESS  = 105;
+const EVENT_INCOMING_LOCK   = 106;
+const EVENT_INCOMING_REVEAL = 107;
+
+// Locally generated events
+const EVENT_LOCAL_FOCUS          = 111;
+const EVENT_LOCAL_BLUR           = 112;
+const EVENT_LOCAL_EDIT           = 113;
+const EVENT_LOCAL_DISCARD        = 114;
+const EVENT_LOCAL_SUBMIT_SEND    = 115;
+const EVENT_LOCAL_SUBMIT_SUCCESS = 116;
+const EVENT_LOCAL_SUBMIT_FAILURE = 117;
+
+// Guess input states
+const STATE_OPEN = 101;
+const STATE_EDITING = 102
+const STATE_SYNCING = 103;
+const STATE_LOCKED = 104;
 
 // Media
 const MEDIA_IMAGE = 1;
@@ -19,11 +35,12 @@ function Quiz(selector) {
     this.latest = 0;
     this.node = document.querySelector(selector);
     this.questions = new Map();
+    this.domstate = new Map();
     Object.seal(this);
 };
 
-Quiz.prototype.inject_events = function (evts) {
-    const prev = new Map(this.questions);
+
+Quiz.prototype.update = function (evts) {
     for (let evt of evts) {
         try {
             this.inject(evt);
@@ -31,132 +48,325 @@ Quiz.prototype.inject_events = function (evts) {
             console.log(`Dropping event: ${exc}`);
         }
     }
-    const curr = this.questions;
 
-    const ops = [];
-    for (let [n, q] of curr) {
-        if (!Object.is(q, prev.get(n))) {
-            ops.push(n);
-            // calculate required updates, append to 'ops' array
-        }
+    for (let [n, q] of this.questions) {
+        let olddom = this.domstate.get(n);
+        let newdom = new DomState(q);
+        let ops = newdom.calculate_updates(olddom);
+        console.log(`Q${n} update operations:`);
+        console.log(JSON.stringify(ops));
+        this.domstate.set(n, newdom);
     }
-    return ops;
 };
+
 
 Quiz.prototype.inject = function (evt) {
     console.debug(`event: ${JSON.stringify(evt)}`);
 
-    if (!Number.isInteger(evt.seqnum)) {
-        throw "Missing or invalid sequence number";
-    }
-    this.latest = evt.seqnum;
-
-    if (!Number.isInteger(evt.question)) {
-        throw "Missing or invalid question number";
-    }
-    const question = this.questions.get(evt.question);
-
-    const updated = this.update_question(question, evt);
-    this.questions.set(evt.question, updated);
-};
-
-Quiz.prototype.update_question = function (question, evt) {
     if (!Number.isInteger(evt.kind)) {
         throw "Missing or invalid event kind";
     }
-    if (question instanceof Question) {
-        if (evt.kind === EVENT_ASK) {
-            throw "Question already asked";
-        }
-    } else {
-        if (evt.kind !== EVENT_ASK) {
-            throw "Question not yet asked";
-        }
-    }
 
     switch (evt.kind) {
-        case EVENT_ASK:
-            return Question.create(
-                evt.question,
-                evt.data.kind,
-                evt.data.text,
-                evt.data.media,
-            );
+        // Incoming events.
+        case EVENT_INCOMING_JOIN:
+            this.handle_incoming_join(evt.data);
+            break;
+        case EVENT_INCOMING_ASK:
+            this.handle_incoming_ask(evt.data);
+            break;
+        case EVENT_INCOMING_FOCUS:
+            this.handle_incoming_focus(evt.data);
+            break;
+        case EVENT_INCOMING_BLUR:
+            this.handle_incoming_blur(evt.data);
+            break;
+        case EVENT_INCOMING_GUESS:
+            this.handle_incoming_guess(evt.data);
+            break;
+        case EVENT_INCOMING_LOCK:
+            this.handle_incoming_lock(evt.data);
+            break;
+        case EVENT_INCOMING_REVEAL:
+            this.handle_incoming_reveal(evt.data);
+            break;
 
-        case EVENT_FOCUSIN:
-            if (!question.open) {
-                throw "Question is locked";
-            }
-            if (question.focus) {
-                throw "Question already in focus";
-            }
-            return question.update({"focus": true});
-
-        case EVENT_FOCUSOUT:
-            if (!question.open) {
-                throw "Question is locked";
-            }
-            if (!question.focus) {
-                throw "Question already out of focus";
-            }
-            return question.update({"focus": false});
-
-        case EVENT_CHANGE:
-            if (!question.open) {
-                throw "Question is locked";
-            }
-            return question.update({"guess": evt.data.guess});
-
-        case EVENT_LOCK:
-            if (!question.open) {
-                throw "Question already locked";
-            }
-            return question.update({"open": false, "focus": false});
-
-        case EVENT_REVEAL:
-            if (question.open) {
-                throw "Revealing answer to open question";
-            }
-            return question.update({"answer": evt.data.answer});
+        // Local events.
+        case EVENT_LOCAL_FOCUS:
+            this.handle_local_focus(evt.data);
+            break;
+        case EVENT_LOCAL_BLUR:
+            this.handle_local_blur(evt.data);
+            break;
+        case EVENT_LOCAL_EDIT:
+            this.handle_local_edit(evt.data);
+            break;
+        case EVENT_LOCAL_DISCARD:
+            this.handle_local_discard(evt.data);
+            break;
+        case EVENT_LOCAL_SUBMIT_SEND:
+            this.handle_local_submit_send(evt.data);
+            break;
+        case EVENT_LOCAL_SUBMIT_SUCCESS:
+            this.handle_local_submit_success(evt.data);
+            break;
+        case EVENT_LOCAL_SUBMIT_FAILURE:
+            this.handle_local_submit_failure(evt.data);
+            break;
 
         default:
-            throw "Unknown event kind";
+            throw `Unknown event kind: ${evt.kind}`;
     }
-}
+
+    //if (!Number.isInteger(evt.seqnum)) {
+    //    throw "Missing or invalid sequence number";
+    //}
+    //this.latest = evt.seqnum;
+};
+
+
+Quiz.prototype.handle_incoming_join = function (data) {
+    throw "Not implemented";
+};
+
+
+Quiz.prototype.handle_incoming_ask = function (data) {
+    if (!Number.isInteger(data.question)) {
+        throw `Missing or invalid question number: ${data.question}`;
+    }
+    if (this.questions.has(data.question)) {
+        throw `Question already asked: ${data.question}`;
+    }
+
+    const question = Question.create(
+        data.question,
+        data.kind,
+        data.text,
+        data.media,
+    );
+    this.questions.set(data.question, question);
+};
+
+
+Quiz.prototype.handle_incoming_focus = function (data) {
+    throw "Not implemented";
+};
+
+
+Quiz.prototype.handle_incoming_blur = function (data) {
+    throw "Not implemented";
+};
+
+
+Quiz.prototype.handle_incoming_guess = function (data) {
+    if (!Number.isInteger(data.question)) {
+        throw `Missing or invalid question number: ${data.question}`;
+    }
+    if (!this.questions.has(data.question)) {
+        throw `Question not yet asked: ${data.question}`;
+    }
+
+    const question = this.questions.get(data.question);
+    if (question.state === STATE_LOCKED) {
+        throw "Question is locked";
+    }
+
+    question.guess = data.guess;
+};
+
+
+Quiz.prototype.handle_incoming_lock = function (data) {
+    if (!Number.isInteger(data.question)) {
+        throw `Missing or invalid question number: ${data.question}`;
+    }
+    if (!this.questions.has(data.question)) {
+        throw `Question not yet asked: ${data.question}`;
+    }
+
+    const question = this.questions.get(data.question);
+    if (question.state === STATE_LOCKED) {
+        throw `Question already locked: ${data.question}`;
+    }
+
+    question.state = STATE_LOCKED;
+    question.wip = question.guess;
+};
+
+
+Quiz.prototype.handle_incoming_reveal = function (data) {
+    if (!Number.isInteger(data.question)) {
+        throw `Missing or invalid question number: ${data.question}`;
+    }
+    if (!this.questions.has(data.question)) {
+        throw `Question not yet asked: ${data.question}`;
+    }
+
+    const question = this.questions.get(data.question);
+    if (question.state !== STATE_LOCKED) {
+        throw `Question not yet locked: ${data.question}`;
+    }
+
+    question.answer = data.answer;
+};
+
+
+Quiz.prototype.handle_local_focus = function (data) {
+    if (!Number.isInteger(data.question)) {
+        throw `Missing or invalid question number: ${data.question}`;
+    }
+    if (!this.questions.has(data.question)) {
+        throw `Question not yet asked: ${data.question}`;
+    }
+
+    const question = this.questions.get(data.question);
+    switch (question.state) {
+        case STATE_LOCKED:
+            throw "Question is locked";
+        case STATE_SYNCING:
+            throw "Syncing in progress";
+        case STATE_EDITING:
+            throw "Already editing";
+    }
+
+    question.state = STATE_EDITING;
+};
+
+
+Quiz.prototype.handle_local_blur = function (data) {
+    if (!Number.isInteger(data.question)) {
+        throw `Missing or invalid question number: ${data.question}`;
+    }
+    if (!this.questions.has(data.question)) {
+        throw `Question not yet asked: ${data.question}`;
+    }
+
+    const question = this.questions.get(data.question);
+    switch (question.state) {
+        case STATE_LOCKED:
+            throw "Question is locked";
+        case STATE_SYNCING:
+            throw "Syncing in progress";
+        case STATE_OPEN:
+            throw "Not editing";
+    }
+
+    question.state = STATE_OPEN;
+};
+
+
+Quiz.prototype.handle_local_edit = function (data) {
+    if (!Number.isInteger(data.question)) {
+        throw `Missing or invalid question number: ${data.question}`;
+    }
+    if (!this.questions.has(data.question)) {
+        throw `Question not yet asked: ${data.question}`;
+    }
+
+    const question = this.questions.get(data.question);
+    switch (question.state) {
+        case STATE_LOCKED:
+            throw "Question is locked";
+        case STATE_SYNCING:
+            throw "Syncing in progress";
+        case STATE_OPEN:
+            throw "Not editing";
+    }
+
+    question.wip = data.guess;
+};
+
+
+Quiz.prototype.handle_local_discard = function (data) {
+    if (!Number.isInteger(data.question)) {
+        throw `Missing or invalid question number: ${data.question}`;
+    }
+    if (!this.questions.has(data.question)) {
+        throw `Question not yet asked: ${data.question}`;
+    }
+
+    const question = this.questions.get(data.question);
+    switch (question.state) {
+        case STATE_LOCKED:
+            throw "Question is locked";
+        case STATE_SYNCING:
+            throw "Syncing in progress";
+        case STATE_EDIT:
+            throw "Editing in progress";
+    }
+
+    question.wip = question.guess;
+};
+
+
+Quiz.prototype.handle_local_submit_send = function (data) {
+    if (!Number.isInteger(data.question)) {
+        throw `Missing or invalid question number: ${data.question}`;
+    }
+    if (!this.questions.has(data.question)) {
+        throw `Question not yet asked: ${data.question}`;
+    }
+
+    const question = this.questions.get(data.question);
+    switch (question.state) {
+        case STATE_LOCKED:
+            throw "Question is locked";
+        case STATE_SYNCING:
+            throw "Syncing in progress";
+    }
+
+    question.state = STATE_SYNCING;
+};
+
+
+Quiz.prototype.handle_local_submit_success = function (data) {
+    if (!Number.isInteger(data.question)) {
+        throw `Missing or invalid question number: ${data.question}`;
+    }
+    if (!this.questions.has(data.question)) {
+        throw `Question not yet asked: ${data.question}`;
+    }
+
+    const question = this.questions.get(data.question);
+    if (question.state !== STATE_SYNCING) {
+        throw "Not syncing";
+    }
+
+    question.state = STATE_OPEN;
+};
+
+
+Quiz.prototype.handle_local_submit_failure = function (data) {
+    if (!Number.isInteger(data.question)) {
+        throw `Missing or invalid question number: ${data.question}`;
+    }
+    if (!this.questions.has(data.question)) {
+        throw `Question not yet asked: ${data.question}`;
+    }
+
+    const question = this.questions.get(data.question);
+    if (question.state !== STATE_SYNCING) {
+        throw "Not syncing";
+    }
+
+    question.state = STATE_OPEN;
+};
 
 //==============================================================================
 
-function Question(number, kind, text, media, open, focus, guess, answer) {
+function Question(number, kind, text, media, state, guess, wip, answer) {
     this.number = number;
     this.kind = kind;
     this.text = text;
     this.media = media;
-    this.open = open;
-    this.focus = focus;
+    this.state = state;
     this.guess = guess;
+    this.wip = wip;
     this.answer = answer;
+    Object.seal(this);
 }
 
 Question.create = function (number, kind, text, media) {
-    const created = new Question(number, kind, text, media, true, false, "", null);
-    Object.freeze(created);
-    return created;
-};
-
-Question.prototype.update = function (updates) {
-    const copy = new Question(
-        this.number,
-        this.kind,
-        this.text,
-        this.media,
-        this.open,
-        this.focus,
-        this.guess,
-        this.answer,
-    );
-    Object.assign(copy, updates);
-    Object.freeze(copy);
-    return copy;
+    return new Question(number, kind, text, media, STATE_OPEN, "", "", null);
 };
 
 Question.prototype.toJSON = function () {
@@ -165,149 +375,9 @@ Question.prototype.toJSON = function () {
         "kind": this.kind,
         "text": this.text,
         "media": this.media,
-        "open": this.open,
-        "focus": this.focus,
+        "state": this.state,
         "guess": this.guess,
+        "wip": this.wip,
         "answer": this.answer,
     };
 };
-
-//==============================================================================
-
-function DomNode(quiz, number, kind, text, media) {
-    const template = document.getElementById("__template");
-    const node_question = template.content.firstElementChild.cloneNode(true);
-
-    const node_number = node_question.querySelector(".__number");
-    const node_text = node_question.querySelector(".__text");
-    const node_media = node_question.querySelector(".__media");
-    const node_guess = node_question.querySelector(".__guess");
-    const node_answer = node_question.querySelector(".__answer");
-
-    // Write the question number and text - these are static over the lifetime
-    // of the question.
-    node_number.innerText = `Q${number}`;
-    node_text.innerText = text;
-
-    // Insert any associated media.
-    switch (kind) {
-        case MEDIA_IMAGE:
-            const image = document.createElement("img");
-            image.src = media.src;
-            image.width = "200";
-            node_media.appendChild(image);
-            break;
-        case MEDIA_AUDIO:
-            const audio = document.createElement("audio");
-            audio.src = media.src;
-            audio.type = media.mime;
-            audio.controls = true;
-            node_media.appendChild(audio);
-            break;
-        case MEDIA_VIDEO:
-            const video = document.createElement("video");
-            video.src = media.src;
-            video.type = media.mime;
-            video.width = "200";
-            video.controls = true;
-            node_media.appendChild(video);
-            break;
-        default:
-            break;
-    }
-
-    // Add event listeners - these all push events straight to the server, to be
-    // injected into the quiz once they arrive via polling.
-    node_guess.addEventListener("focusin", (e) => {
-        quiz.push({
-            "kind": EVENT_FOCUSIN,
-            "question": number,
-            "data": {},
-        });
-        e.stopPropagation()
-    });
-    node_guess.addEventListener("focusout", (e) => {
-        quiz.push({
-            "kind": EVENT_FOCUSOUT,
-            "question": number,
-            "data": {},
-        });
-        e.stopPropagation()
-    });
-    node_guess.addEventListener("change", (e) => {
-        quiz.push({
-            "kind": EVENT_CHANGE,
-            "question": number,
-            "data": {
-                "guess": node_guess.value,
-            },
-        });
-        e.stopPropagation()
-    });
-
-    // Store interesting children for future reference.
-    this.question = node_question;
-    this.guess = node_guess;
-    this.answer = node_answer;
-}
-
-//==============================================================================
-
-let quiz = new Quiz("#quiz");
-let ops;
-
-ops = quiz.inject_events([
-    {
-        "seqnum":1,"kind":1,"question":1,
-        "data":{"kind":0,"text":"Text question","media":null},
-    },
-    {
-        "seqnum":2,"kind":1,"question":2,
-        "data":{"kind":1,"text":"Image question","media":{"src":"url","mime":"image/jpeg"}},
-    },
-    {
-        "seqnum":3,"kind":1,"question":3,
-        "data":{"kind":2,"text":"Audio question","media":{"src":"url","mime":"audio/mpeg"}},
-    },
-    {
-        "seqnum":4,"kind":1,"question":4,
-        "data":{"kind":3,"text":"Video question","media":{"src":"url","mime":"video/mpeg"}},
-    },
-]);
-console.log(ops);
-
-ops = quiz.inject_events([
-    {
-        "seqnum":5,"kind":2,"question":1,
-        "data":{},
-    },
-    {
-        "seqnum":6,"kind":4,"question":1,
-        "data":{"guess":"bar"},
-    },
-    {
-        "seqnum":7,"kind":2,"question":3,
-        "data":{},
-    },
-    {
-        "seqnum":8,"kind":3,"question":3,
-        "data":{"guess":"bar"},
-    },
-    {
-        "seqnum":9,"kind":5,"question":4,
-        "data":{},
-    },
-    {
-        "seqnum":10,"kind":6,"question":4,
-        "data":{"answer":"stuff here"},
-    },
-    {
-        "seqnum":11,"kind":6,"question":1,
-        "data":{"answer":"stuff here"},
-    },
-]);
-console.log(ops);
-
-for (let [n, q] of quiz.questions) {
-    console.log(`${n}: ${JSON.stringify(q, null, 4)}`);
-}
