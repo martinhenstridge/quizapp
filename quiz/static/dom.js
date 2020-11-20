@@ -89,6 +89,7 @@ function DomNode(quiz, question) {
     const node_text = node.querySelector(".__text");
     const node_media = node.querySelector(".__media");
     const node_guess = node.querySelector(".__guess");
+    const node_saved = node.querySelector(".__saved");
     const node_submit = node.querySelector(".__submit");
     const node_discard = node.querySelector(".__discard");
     const node_answer = node.querySelector(".__answer");
@@ -182,6 +183,7 @@ function DomNode(quiz, question) {
 
     this.node = node;
     this.node_guess = node_guess;
+    this.node_saved = node_saved;
     this.node_submit = node_submit;
     this.node_discard = node_discard;
     this.node_answer = node_answer;
@@ -196,7 +198,11 @@ DomNode.prototype.update = function (quiz, question, opkind, opdata) {
             break;
 
         case DOM_GUESS_SAVED:
-            this.node_guess.style.backgroundColor = opdata ? "white" : "yellow";
+            if (opdata) {
+                this.node_saved.classList.remove("edited");
+            } else {
+                this.node_saved.classList.add("edited");
+            }
             break;
 
         case DOM_GUESS_DISABLED:

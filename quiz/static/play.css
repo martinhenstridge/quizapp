@@ -14,7 +14,7 @@ div.question {
 }
 
 div.__number {
-  padding: 8px;
+  margin: 0px 8px 0px 8px;
 }
 
 div.__answer {
@@ -23,4 +23,9 @@ div.__answer {
   padding: 8px;
   border: 2px solid #F49F0A;
   background-color: #F0F0F0;
+}
+
+span.__saved.edited {
+  color: green;
+  background-color: orange;
 }
