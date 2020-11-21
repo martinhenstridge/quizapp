@@ -11,32 +11,44 @@ const EVENT_LOCAL_SUBMIT_FAILURE = 157;
 
 
 function Quiz(selector) {
-    this.latest = 0;
     this.node = document.querySelector(selector);
     this.questions = new Map();
     this.domnodes = new Map();
+    this.latest = 0;
     Object.seal(this);
 };
 
 
-Quiz.prototype.update = function (evts) {
-    this.update_internal(evts);
-    this.update_external();
+Quiz.prototype.run = function (interval) {
+    setInterval(() => {
+        poll(this.latest).then(evts => {
+            this.inject_events(evts, true);
+        });
+    }, interval);
 };
 
 
-Quiz.prototype.update_internal = function (evts) {
+Quiz.prototype.inject_events = function (evts, expect_seqnum) {
     for (let evt of evts) {
+        console.log(`event: ${JSON.stringify(evt)}`);
         try {
-            this.inject(evt);
+            if (expect_seqnum) {
+                const seqnum = evt.seqnum;
+                if (!Number.isInteger(seqnum)) {
+                    throw "Missing or invalid sequence number";
+                }
+                this.latest = seqnum;
+            }
+            this.handle_event(evt);
         } catch (exc) {
             console.log(`Dropping event: ${exc}`);
         }
     }
+    this.update_dom();
 };
 
 
-Quiz.prototype.update_external = function () {
+Quiz.prototype.update_dom = function () {
     let domnode;
     for (let [number, question] of this.questions) {
         if (this.domnodes.has(number)) {
@@ -49,7 +61,6 @@ Quiz.prototype.update_external = function () {
         const domproxy = new DomProxy(question, true);
         const ops = domproxy.calculate_updates(domnode.domproxy);
         for (let op of ops) {
-            console.log(op);
             domnode.update(quiz, question, op.kind, op.data);
         }
         domnode.domproxy = domproxy;
@@ -60,9 +71,7 @@ Quiz.prototype.update_external = function () {
 };
 
 
-Quiz.prototype.inject = function (evt) {
-    console.log(`event: ${JSON.stringify(evt)}`);
-
+Quiz.prototype.handle_event = function (evt) {
     if (!Number.isInteger(evt.kind)) {
         throw "Missing or invalid event kind";
     }
@@ -117,11 +126,6 @@ Quiz.prototype.inject = function (evt) {
         default:
             throw `Unknown event kind: ${evt.kind}`;
     }
-
-    //if (!Number.isInteger(evt.seqnum)) {
-    //    throw "Missing or invalid sequence number";
-    //}
-    //this.latest = evt.seqnum;
 };
 
 

@@ -71,7 +71,7 @@ class Quiz:
                   answer TEXT NOT NULL,
                   filename TEXT,
                   mimetype TEXT,
-                  CHECK (kind = 0 OR (filename IS NOT NULL AND mimetype IS NOT NULL))
+                  CHECK (kind = 301 OR (filename IS NOT NULL AND mimetype IS NOT NULL))
                 );
                 CREATE INDEX index_filename ON questions(filename);
 

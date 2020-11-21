@@ -208,12 +208,14 @@ function _insert_video(container, media) {
 
 function _handler_guess_focus(quiz, question) {
     return function (e) {
-        quiz.update([{
+        const data = {
             "kind": EVENT_LOCAL_FOCUS,
             "data": {
                 "question": question.number,
             },
-        }]);
+        };
+        push(data);
+        quiz.inject_events([data], false);
         e.stopPropagation();
     };
 }
@@ -221,12 +223,14 @@ function _handler_guess_focus(quiz, question) {
 
 function _handler_guess_blur(quiz, question) {
     return function (e) {
-        quiz.update([{
+        const data = {
             "kind": EVENT_LOCAL_BLUR,
             "data": {
                 "question": question.number,
             },
-        }]);
+        };
+        push(data);
+        quiz.inject_events([data], false);
         e.stopPropagation();
     };
 }
@@ -234,13 +238,14 @@ function _handler_guess_blur(quiz, question) {
 
 function _handler_guess_input(quiz, question) {
     return function (e) {
-        quiz.update([{
+        const data = {
             "kind": EVENT_LOCAL_EDIT,
             "data": {
                 "question": question.number,
                 "guess": e.target.value,
             },
-        }]);
+        };
+        quiz.inject_events([data], false);
         e.stopPropagation();
     };
 }
@@ -248,12 +253,13 @@ function _handler_guess_input(quiz, question) {
 
 function _handler_discard_click(quiz, question) {
     return function (e) {
-        quiz.update([{
+        const data = {
             "kind": EVENT_LOCAL_DISCARD,
             "data": {
                 "question": question.number,
             },
-        }]);
+        };
+        quiz.inject_events([data], false);
         e.stopPropagation();
     };
 }
@@ -261,13 +267,15 @@ function _handler_discard_click(quiz, question) {
 
 function _handler_submit_click(quiz, question) {
     return function (e) {
-        quiz.update([{
+        const data = {
             "kind": EVENT_LOCAL_SUBMIT_SEND,
             "data": {
                 "question": question.number,
                 "guess": e.target.value,
             },
-        }]);
+        };
+        push(data);
+        quiz.inject_events([data], false);
         e.stopPropagation();
     };
 }
