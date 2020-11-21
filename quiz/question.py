@@ -11,10 +11,10 @@ class QuestionState(Enum):
 
 
 class QuestionKind(Enum):
-    TEXT = 0
-    IMAGE = 1
-    AUDIO = 2
-    VIDEO = 3
+    TEXT = 301
+    IMAGE = 302
+    AUDIO = 303
+    VIDEO = 304
 
 
 @dataclass

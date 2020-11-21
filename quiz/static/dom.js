@@ -1,78 +1,74 @@
 "use strict";
 
+const DOM_INSERTED         = 401;
+const DOM_GUESS_SAVED      = 402;
+const DOM_GUESS_DISABLED   = 403;
+const DOM_GUESS_TEXT       = 404;
+const DOM_SUBMIT_DISABLED  = 405;
+const DOM_SUBMIT_RUNNING   = 406;
+const DOM_DISCARD_DISABLED = 407;
+const DOM_ANSWER_HIDDEN    = 408;
+const DOM_ANSWER_TEXT      = 409;
 
-const DOM_INSERT = "insert";
-const DOM_GUESS_SAVED = "guess-saved";
-const DOM_GUESS_DISABLED = "guess-disabled";
-const DOM_GUESS_TEXT = "guess-text";
-const DOM_SUBMIT_DISABLED = "submit-disabled";
-const DOM_SUBMIT_RUNNING = "submit-running";
-const DOM_DISCARD_DISABLED = "discard-disabled";
-const DOM_ANSWER_HIDDEN = "answer-hidden";
-const DOM_ANSWER_TEXT = "answer-text";
 
+function DomProxy(question, inserted) {
+    this._state = new Map();
 
-function DomProxy(question) {
-    this[DOM_GUESS_SAVED] = question.wip === question.guess;
+    this._state.set(DOM_INSERTED, inserted);
+    this._state.set(DOM_GUESS_SAVED, question.wip === question.guess);
 
     if (question.answer === null) {
-        this[DOM_ANSWER_HIDDEN] = true;
-        this[DOM_ANSWER_TEXT] = "";
+        this._state.set(DOM_ANSWER_HIDDEN, true);
+        this._state.set(DOM_ANSWER_TEXT, "");
     } else {
-        this[DOM_ANSWER_HIDDEN] = false;
-        this[DOM_ANSWER_TEXT] = question.answer;
+        this._state.set(DOM_ANSWER_HIDDEN, false);
+        this._state.set(DOM_ANSWER_TEXT, question.answer);
     }
 
     switch (question.state) {
-        case STATE_OPEN:
-            this[DOM_GUESS_DISABLED]   = false;
-            this[DOM_GUESS_TEXT]       = null;
-            this[DOM_SUBMIT_DISABLED]  = false;
-            this[DOM_SUBMIT_RUNNING]   = false;
-            this[DOM_DISCARD_DISABLED] = false;
+        case QUESTION_STATE_OPEN:
+            this._state.set(DOM_GUESS_DISABLED, false);
+            this._state.set(DOM_GUESS_TEXT, null);
+            this._state.set(DOM_SUBMIT_DISABLED, false);
+            this._state.set(DOM_SUBMIT_RUNNING, false);
+            this._state.set(DOM_DISCARD_DISABLED, false);
             break;
 
-        case STATE_EDITING:
-            this[DOM_GUESS_DISABLED]   = false;
-            this[DOM_GUESS_TEXT]       = null;
-            this[DOM_SUBMIT_DISABLED]  = false;
-            this[DOM_SUBMIT_RUNNING]   = false;
-            this[DOM_DISCARD_DISABLED] = false;
+        case QUESTION_STATE_EDITING:
+            this._state.set(DOM_GUESS_DISABLED, false);
+            this._state.set(DOM_GUESS_TEXT, null);
+            this._state.set(DOM_SUBMIT_DISABLED, false);
+            this._state.set(DOM_SUBMIT_RUNNING, false);
+            this._state.set(DOM_DISCARD_DISABLED, false);
             break;
 
-        case STATE_SYNCING:
-            this[DOM_GUESS_DISABLED]   = true;
-            this[DOM_GUESS_TEXT]       = question.wip;
-            this[DOM_SUBMIT_DISABLED]  = true;
-            this[DOM_SUBMIT_RUNNING]   = true;
-            this[DOM_DISCARD_DISABLED] = true;
+        case QUESTION_STATE_SYNCING:
+            this._state.set(DOM_GUESS_DISABLED, true);
+            this._state.set(DOM_GUESS_TEXT, question.wip);
+            this._state.set(DOM_SUBMIT_DISABLED, true);
+            this._state.set(DOM_SUBMIT_RUNNING, true);
+            this._state.set(DOM_DISCARD_DISABLED, true);
             break;
 
-        case STATE_LOCKED:
-            this[DOM_GUESS_DISABLED]   = true;
-            this[DOM_GUESS_TEXT]       = question.guess;
-            this[DOM_SUBMIT_DISABLED]  = true;
-            this[DOM_SUBMIT_RUNNING]   = false;
-            this[DOM_DISCARD_DISABLED] = true;
+        case QUESTION_STATE_LOCKED:
+            this._state.set(DOM_GUESS_DISABLED, true);
+            this._state.set(DOM_GUESS_TEXT, question.guess);
+            this._state.set(DOM_SUBMIT_DISABLED, true);
+            this._state.set(DOM_SUBMIT_RUNNING, false);
+            this._state.set(DOM_DISCARD_DISABLED, true);
             break;
     }
-
-    return this;
 }
 
 
 DomProxy.prototype.calculate_updates = function (prev) {
-    if (prev === null) {
-        return [{ "kind": DOM_INSERT, "data": null }];
-    }
-
     let ops = [];
-    for (let [key, val] of Object.entries(this)) {
+    for (let [key, val] of this._state) {
         if (key === DOM_GUESS_TEXT && val === null) {
             // Never update the guess text while editing is in progress.
             continue;
         }
-        if (val !== prev[key]) {
+        if (val !== prev._state.get(key)) {
             ops.push({ "kind": key, "data": val });
         }
     }
@@ -82,9 +78,11 @@ DomProxy.prototype.calculate_updates = function (prev) {
 //==============================================================================
 
 function DomNode(quiz, question) {
+    // Clone question template from HTML.
     const template = document.getElementById("__template");
     const node = template.content.firstElementChild.cloneNode(true);
 
+    // Lookup interesting children.
     const node_number = node.querySelector(".__number");
     const node_text = node.querySelector(".__text");
     const node_media = node.querySelector(".__media");
@@ -94,92 +92,30 @@ function DomNode(quiz, question) {
     const node_discard = node.querySelector(".__discard");
     const node_answer = node.querySelector(".__answer");
 
-    // Write the question number and text - these are static over the lifetime
-    // of the question.
+    // Write the question number, question text and insert any associated media
+    // - these are static over the lifetime of the question.
     node_number.innerText = `Q${question.number}`;
     node_text.innerText = question.text;
-
-    // Insert any associated media.
     switch (question.kind) {
-        case MEDIA_IMAGE:
-            const image = document.createElement("img");
-            image.src = question.media.src;
-            image.width = "200";
-            node_media.appendChild(image);
+        case QUESTION_KIND_TEXT:
             break;
-
-        case MEDIA_AUDIO:
-            const audio = document.createElement("audio");
-            audio.src = question.media.src;
-            audio.type = question.media.mime;
-            audio.controls = true;
-            node_media.appendChild(audio);
+        case QUESTION_KIND_IMAGE:
+            _insert_image(node_media, media);
             break;
-
-        case MEDIA_VIDEO:
-            const video = document.createElement("video");
-            video.src = question.media.src;
-            video.type = question.media.mime;
-            video.width = "200";
-            video.controls = true;
-            node_media.appendChild(video);
+        case QUESTION_KIND_AUDIO:
+            _insert_audio(node_media, media);
             break;
-
-        default:
+        case QUESTION_KIND_VIDEO:
+            _insert_video(node_media, media);
             break;
     }
 
-    node_guess.addEventListener("focus", (e) => {
-        quiz.update([{
-            "kind": EVENT_LOCAL_FOCUS,
-            "data": {
-                "question": question.number,
-            },
-        }]);
-        e.stopPropagation();
-    });
-
-    node_guess.addEventListener("blur", (e) => {
-        quiz.update([{
-            "kind": EVENT_LOCAL_BLUR,
-            "data": {
-                "question": question.number,
-            },
-        }]);
-        e.stopPropagation();
-    });
-
-    node_guess.addEventListener("input", (e) => {
-        quiz.update([{
-            "kind": EVENT_LOCAL_EDIT,
-            "data": {
-                "question": question.number,
-                "guess": e.target.value,
-            },
-        }]);
-        e.stopPropagation();
-    });
-
-    node_discard.addEventListener("click", (e) => {
-        quiz.update([{
-            "kind": EVENT_LOCAL_DISCARD,
-            "data": {
-                "question": question.number,
-            },
-        }]);
-        e.stopPropagation();
-    });
-
-    node_submit.addEventListener("click", (e) => {
-        quiz.update([{
-            "kind": EVENT_LOCAL_SUBMIT_SEND,
-            "data": {
-                "question": question.number,
-                "guess": e.target.value,
-            },
-        }]);
-        e.stopPropagation();
-    });
+    // Add event listeners.
+    node_guess.addEventListener("focus", _handler_guess_focus(quiz, question));
+    node_guess.addEventListener("blur", _handler_guess_blur(quiz, question));
+    node_guess.addEventListener("input", _handler_guess_input(quiz, question));
+    node_discard.addEventListener("click", _handler_discard_click(quiz, question));
+    node_submit.addEventListener("click", _handler_submit_click(quiz, question));
 
     this.node = node;
     this.node_guess = node_guess;
@@ -187,14 +123,18 @@ function DomNode(quiz, question) {
     this.node_submit = node_submit;
     this.node_discard = node_discard;
     this.node_answer = node_answer;
-    this.domproxy = null;
+    this.domproxy = new DomProxy(question, false);
 }
 
 
 DomNode.prototype.update = function (quiz, question, opkind, opdata) {
     switch (opkind) {
-        case DOM_INSERT:
-            quiz.node.appendChild(this.node);
+        case DOM_INSERTED:
+            if (opdata) {
+                quiz.node.appendChild(this.node);
+            } else {
+                // Impossible
+            }
             break;
 
         case DOM_GUESS_SAVED:
@@ -237,3 +177,97 @@ DomNode.prototype.update = function (quiz, question, opkind, opdata) {
             throw "Unknown update operation";
     }
 };
+
+
+function _insert_image(container, media) {
+    const image = document.createElement("img");
+    image.src = media.src;
+    image.width = "200";
+    container.appendChild(image);
+}
+
+
+function _insert_audio(container, media) {
+    const audio = document.createElement("audio");
+    audio.src = media.src;
+    audio.type = media.mime;
+    audio.controls = true;
+    container.appendChild(audio);
+}
+
+
+function _insert_video(container, media) {
+    const video = document.createElement("video");
+    video.src = media.src;
+    video.type = media.mime;
+    video.width = "200";
+    video.controls = true;
+    container.appendChild(video);
+}
+
+
+function _handler_guess_focus(quiz, question) {
+    return function (e) {
+        quiz.update([{
+            "kind": EVENT_LOCAL_FOCUS,
+            "data": {
+                "question": question.number,
+            },
+        }]);
+        e.stopPropagation();
+    };
+}
+
+
+function _handler_guess_blur(quiz, question) {
+    return function (e) {
+        quiz.update([{
+            "kind": EVENT_LOCAL_BLUR,
+            "data": {
+                "question": question.number,
+            },
+        }]);
+        e.stopPropagation();
+    };
+}
+
+
+function _handler_guess_input(quiz, question) {
+    return function (e) {
+        quiz.update([{
+            "kind": EVENT_LOCAL_EDIT,
+            "data": {
+                "question": question.number,
+                "guess": e.target.value,
+            },
+        }]);
+        e.stopPropagation();
+    };
+}
+
+
+function _handler_discard_click(quiz, question) {
+    return function (e) {
+        quiz.update([{
+            "kind": EVENT_LOCAL_DISCARD,
+            "data": {
+                "question": question.number,
+            },
+        }]);
+        e.stopPropagation();
+    };
+}
+
+
+function _handler_submit_click(quiz, question) {
+    return function (e) {
+        quiz.update([{
+            "kind": EVENT_LOCAL_SUBMIT_SEND,
+            "data": {
+                "question": question.number,
+                "guess": e.target.value,
+            },
+        }]);
+        e.stopPropagation();
+    };
+}

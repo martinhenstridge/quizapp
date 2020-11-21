@@ -1,34 +1,13 @@
 "use strict";
 
-
-// Incoming events from server
-const EVENT_INCOMING_JOIN   = "E/incoming-join";
-const EVENT_INCOMING_ASK    = "E/incoming-ask";
-const EVENT_INCOMING_FOCUS  = "E/incoming-focus";
-const EVENT_INCOMING_BLUR   = "E/incoming-blur";
-const EVENT_INCOMING_GUESS  = "E/incoming-guess";
-const EVENT_INCOMING_LOCK   = "E/incoming-lock";
-const EVENT_INCOMING_REVEAL = "E/incoming-reveal";
-
-// Locally generated events
-const EVENT_LOCAL_FOCUS          = "E/local-focus";
-const EVENT_LOCAL_BLUR           = "E/local-blur";
-const EVENT_LOCAL_EDIT           = "E/local-edit";
-const EVENT_LOCAL_DISCARD        = "E/local-discard";
-const EVENT_LOCAL_SUBMIT_SEND    = "E/local-submit-send";
-const EVENT_LOCAL_SUBMIT_SUCCESS = "E/local-submit-success";
-const EVENT_LOCAL_SUBMIT_FAILURE = "E/local-submit-failure";
-
-// Guess input states
-const STATE_OPEN    = "S/open";
-const STATE_EDITING = "S/editing";
-const STATE_SYNCING = "S/syncing";
-const STATE_LOCKED  = "S/locked";
-
-// Media
-const MEDIA_IMAGE = "M/image";
-const MEDIA_AUDIO = "M/audio";
-const MEDIA_VIDEO = "M/video";
+// Client-local quiz events
+const EVENT_LOCAL_FOCUS          = 151;
+const EVENT_LOCAL_BLUR           = 152;
+const EVENT_LOCAL_EDIT           = 153;
+const EVENT_LOCAL_DISCARD        = 154;
+const EVENT_LOCAL_SUBMIT_SEND    = 155;
+const EVENT_LOCAL_SUBMIT_SUCCESS = 156;
+const EVENT_LOCAL_SUBMIT_FAILURE = 157;
 
 
 function Quiz(selector) {
@@ -67,9 +46,10 @@ Quiz.prototype.update_external = function () {
             this.domnodes.set(number, domnode);
         }
 
-        const domproxy = new DomProxy(question);
+        const domproxy = new DomProxy(question, true);
         const ops = domproxy.calculate_updates(domnode.domproxy);
         for (let op of ops) {
+            console.log(op);
             domnode.update(quiz, question, op.kind, op.data);
         }
         domnode.domproxy = domproxy;
@@ -83,9 +63,9 @@ Quiz.prototype.update_external = function () {
 Quiz.prototype.inject = function (evt) {
     console.log(`event: ${JSON.stringify(evt)}`);
 
-    //if (!Number.isInteger(evt.kind)) {
-    //    throw "Missing or invalid event kind";
-    //}
+    if (!Number.isInteger(evt.kind)) {
+        throw "Missing or invalid event kind";
+    }
 
     switch (evt.kind) {
         // Incoming events.
@@ -187,7 +167,7 @@ Quiz.prototype.handle_incoming_guess = function (data) {
     }
 
     const question = this.questions.get(data.question);
-    if (question.state === STATE_LOCKED) {
+    if (question.state === QUESTION_STATE_LOCKED) {
         throw "Question is locked";
     }
 
@@ -204,11 +184,11 @@ Quiz.prototype.handle_incoming_lock = function (data) {
     }
 
     const question = this.questions.get(data.question);
-    if (question.state === STATE_LOCKED) {
+    if (question.state === QUESTION_STATE_LOCKED) {
         throw `Question already locked: ${data.question}`;
     }
 
-    question.state = STATE_LOCKED;
+    question.state = QUESTION_STATE_LOCKED;
     question.wip = question.guess;
 };
 
@@ -222,7 +202,7 @@ Quiz.prototype.handle_incoming_reveal = function (data) {
     }
 
     const question = this.questions.get(data.question);
-    if (question.state !== STATE_LOCKED) {
+    if (question.state !== QUESTION_STATE_LOCKED) {
         throw `Question not yet locked: ${data.question}`;
     }
 
@@ -240,15 +220,15 @@ Quiz.prototype.handle_local_focus = function (data) {
 
     const question = this.questions.get(data.question);
     switch (question.state) {
-        case STATE_LOCKED:
+        case QUESTION_STATE_LOCKED:
             throw "Question is locked";
-        case STATE_SYNCING:
+        case QUESTION_STATE_SYNCING:
             throw "Syncing in progress";
-        case STATE_EDITING:
+        case QUESTION_STATE_EDITING:
             throw "Already editing";
     }
 
-    question.state = STATE_EDITING;
+    question.state = QUESTION_STATE_EDITING;
 };
 
 
@@ -262,15 +242,15 @@ Quiz.prototype.handle_local_blur = function (data) {
 
     const question = this.questions.get(data.question);
     switch (question.state) {
-        case STATE_LOCKED:
+        case QUESTION_STATE_LOCKED:
             throw "Question is locked";
-        case STATE_SYNCING:
+        case QUESTION_STATE_SYNCING:
             throw "Syncing in progress";
-        case STATE_OPEN:
+        case QUESTION_STATE_OPEN:
             throw "Not editing";
     }
 
-    question.state = STATE_OPEN;
+    question.state = QUESTION_STATE_OPEN;
 };
 
 
@@ -284,11 +264,11 @@ Quiz.prototype.handle_local_edit = function (data) {
 
     const question = this.questions.get(data.question);
     switch (question.state) {
-        case STATE_LOCKED:
+        case QUESTION_STATE_LOCKED:
             throw "Question is locked";
-        case STATE_SYNCING:
+        case QUESTION_STATE_SYNCING:
             throw "Syncing in progress";
-        case STATE_OPEN:
+        case QUESTION_STATE_OPEN:
             throw "Not editing";
     }
 
@@ -306,11 +286,11 @@ Quiz.prototype.handle_local_discard = function (data) {
 
     const question = this.questions.get(data.question);
     switch (question.state) {
-        case STATE_LOCKED:
+        case QUESTION_STATE_LOCKED:
             throw "Question is locked";
-        case STATE_SYNCING:
+        case QUESTION_STATE_SYNCING:
             throw "Syncing in progress";
-        case STATE_EDITING:
+        case QUESTION_STATE_EDITING:
             throw "Editing in progress";
     }
 
@@ -328,13 +308,13 @@ Quiz.prototype.handle_local_submit_send = function (data) {
 
     const question = this.questions.get(data.question);
     switch (question.state) {
-        case STATE_LOCKED:
+        case QUESTION_STATE_LOCKED:
             throw "Question is locked";
-        case STATE_SYNCING:
+        case QUESTION_STATE_SYNCING:
             throw "Syncing in progress";
     }
 
-    question.state = STATE_SYNCING;
+    question.state = QUESTION_STATE_SYNCING;
 };
 
 
@@ -347,11 +327,11 @@ Quiz.prototype.handle_local_submit_success = function (data) {
     }
 
     const question = this.questions.get(data.question);
-    if (question.state !== STATE_SYNCING) {
+    if (question.state !== QUESTION_STATE_SYNCING) {
         throw "Not syncing";
     }
 
-    question.state = STATE_OPEN;
+    question.state = QUESTION_STATE_OPEN;
 };
 
 
@@ -364,40 +344,9 @@ Quiz.prototype.handle_local_submit_failure = function (data) {
     }
 
     const question = this.questions.get(data.question);
-    if (question.state !== STATE_SYNCING) {
+    if (question.state !== QUESTION_STATE_SYNCING) {
         throw "Not syncing";
     }
 
-    question.state = STATE_OPEN;
-};
-
-//==============================================================================
-
-function Question(number, kind, text, media, state, guess, wip, answer) {
-    this.number = number;
-    this.kind = kind;
-    this.text = text;
-    this.media = media;
-    this.state = state;
-    this.guess = guess;
-    this.wip = wip;
-    this.answer = answer;
-    Object.seal(this);
-}
-
-Question.create = function (number, kind, text, media) {
-    return new Question(number, kind, text, media, STATE_OPEN, "", "", null);
-};
-
-Question.prototype.toJSON = function () {
-    return {
-        "number": this.number,
-        "kind": this.kind,
-        "text": this.text,
-        "media": this.media,
-        "state": this.state,
-        "guess": this.guess,
-        "wip": this.wip,
-        "answer": this.answer,
-    };
+    question.state = QUESTION_STATE_OPEN;
 };
