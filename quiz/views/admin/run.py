@@ -5,6 +5,10 @@ from ...question import QuestionKind, QuestionState
 from ... import app
 
 
+ADMIN_TEAM = 0
+ADMIN_PLAYER = "__QUIZMASTER__"
+
+
 @app.route("/<quizid>/admin/run/")
 def run(quizid):
     quiz = Quiz.get(quizid)
@@ -14,25 +18,29 @@ def run(quizid):
 @app.route("/<quizid>/admin/run/ask", methods=["POST"])
 def run_ask(quizid):
     quiz = Quiz.get(quizid)
-    number = request.form["number"]
+    number = int(request.form["number"])
 
     quiz.update_question_state(number, QuestionState.ASKED)
 
     question = quiz.get_question(number)
-    if question.kind is not QuestionKind.TEXT:
-        src = url_for("assets", quizid=quizid, filename=question.filename)
+    if question.kind is QuestionKind.TEXT:
+        media = None
     else:
-        src = None
+        media = {
+            "src": url_for("assets", quizid=quizid, filename=question.filename),
+            "mime": question.mimetype,
+        }
 
     quiz.add_event(
-        number,
         EventKind.ASK,
         {
+            "question": number,
             "kind": question.kind.value,
             "text": question.text,
-            "src": src,
-            "mime": question.mimetype,
+            "media": media,
         },
+        ADMIN_TEAM,
+        ADMIN_PLAYER,
     )
 
     dest = url_for("run", quizid=quizid)
@@ -42,11 +50,11 @@ def run_ask(quizid):
 @app.route("/<quizid>/admin/run/lock", methods=["POST"])
 def run_lock(quizid):
     quiz = Quiz.get(quizid)
-    number = request.form["number"]
+    number = int(request.form["number"])
 
     quiz.update_question_state(number, QuestionState.LOCKED)
 
-    quiz.add_event(number, EventKind.LOCK, {})
+    quiz.add_event(EventKind.LOCK, {"question": number}, ADMIN_TEAM, ADMIN_PLAYER)
 
     dest = url_for("run", quizid=quizid)
     return redirect(dest)
@@ -55,12 +63,17 @@ def run_lock(quizid):
 @app.route("/<quizid>/admin/run/reveal", methods=["POST"])
 def run_reveal(quizid):
     quiz = Quiz.get(quizid)
-    number = request.form["number"]
+    number = int(request.form["number"])
 
     quiz.update_question_state(number, QuestionState.REVEALED)
 
     question = quiz.get_question(number)
-    quiz.add_event(number, EventKind.REVEAL, {"answer": question.answer})
+    quiz.add_event(
+        EventKind.REVEAL,
+        {"question": number, "answer": question.answer},
+        ADMIN_TEAM,
+        ADMIN_PLAYER,
+    )
 
     dest = url_for("run", quizid=quizid)
     return redirect(dest)

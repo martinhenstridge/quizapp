@@ -20,7 +20,7 @@ Question.create = function (number, kind, text, media) {
         media,
         QUESTION_STATE_OPEN,
         "",
-        "",
+        null,
         null,
     );
 };

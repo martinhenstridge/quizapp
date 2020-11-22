@@ -2,7 +2,7 @@ from __future__ import annotations
 import os
 import json
 import sqlite3
-from typing import Dict, List, Optional, Tuple, Union
+from typing import Any, Dict, List, Optional, Tuple
 from .event import EventKind
 from .question import Question, QuestionKind, QuestionState
 
@@ -78,13 +78,11 @@ class Quiz:
                 -- Table: events
                 CREATE TABLE IF NOT EXISTS events (
                   seqnum INTEGER PRIMARY KEY,
-                  question INTEGER NOT NULL,
+                  at INTEGER NOT NULL,
                   kind INTEGER NOT NULL,
                   data TEXT NOT NULL,
                   team INTEGER NOT NULL,
-                  player TEXT NOT NULL,
-                  FOREIGN KEY(team) REFERENCES teams(number),
-                  FOREIGN KEY(question) REFERENCES questions(number)
+                  FOREIGN KEY(team) REFERENCES teams(number)
                 );
             """
             )
@@ -163,38 +161,35 @@ class Quiz:
 
     def add_event(
         self,
-        question: int,
         kind: EventKind,
-        data: Dict[str, Union[int, str]],
-        team: int = 0,
-        player: str = "__quizmaster",
+        data: Dict[str, Any],
+        team: int,
+        player: str,
     ) -> None:
+        data["player"] = player
         with self.conn as conn:
             conn.execute(
                 """
                 INSERT INTO
                   events (
-                    question,
+                    at,
                     kind,
                     data,
-                    team,
-                    player)
-                VALUES (?, ?, ?, ?, ?)
+                    team)
+                VALUES (DATETIME("now"), ?, ?, ?)
                 """,
-                (question, kind.value, json.dumps(data), team, player),
+                (kind.value, json.dumps(data), team),
             )
 
-    def get_events_since(self, team: int, latest: int) -> List[Dict]:
+    def get_events_since(self, team: int, latest: int) -> List[Dict[str, Any]]:
         with self.conn as conn:
             cur = conn.execute(
                 """
                 SELECT
                   seqnum,
-                  question,
+                  at,
                   kind,
-                  data,
-                  team,
-                  player
+                  data
                 FROM
                   events
                 WHERE
@@ -207,11 +202,9 @@ class Quiz:
             return [
                 {
                     "seqnum": row[0],
-                    "question": row[1],
+                    "timestamp": row[1],
                     "kind": row[2],
                     "data": json.loads(row[3]),
-                    "team": row[4],
-                    "player": row[5],
                 }
                 for row in cur.fetchall()
             ]

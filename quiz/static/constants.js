@@ -1,13 +1,13 @@
 "use strict";
 
 // Quiz events
-const EVENT_INCOMING_JOIN    = 101;
-const EVENT_INCOMING_ASK     = 102;
-const EVENT_INCOMING_FOCUS   = 103;
-const EVENT_INCOMING_BLUR    = 104;
-const EVENT_INCOMING_GUESS   = 105;
-const EVENT_INCOMING_LOCK    = 106;
-const EVENT_INCOMING_REVEAL  = 107;
+const EVENT_JOIN             = 101;
+const EVENT_ASK              = 102;
+const EVENT_FOCUS            = 103;
+const EVENT_BLUR             = 104;
+const EVENT_GUESS            = 105;
+const EVENT_LOCK             = 106;
+const EVENT_REVEAL           = 107;
 
 // Question states
 const QUESTION_STATE_OPEN    = 201;

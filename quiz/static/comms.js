@@ -16,7 +16,6 @@ function push(data) {
     return fetch("events", request)
         .then(_status)
         .then(_json)
-        .catch(console.error);
 }
 
 
@@ -31,7 +30,6 @@ function poll(latest) {
     return fetch(`events?since=${latest}`, request)
         .then(_status)
         .then(_json)
-        .catch(console.error);
 }
 
 

@@ -26,13 +26,15 @@ def events(quizid):
     if request.method == "POST":
         data = request.json
         quiz.add_event(
-            data["question"],
             EventKind(data["kind"]),
             data["data"],
             session["team"],
             session["player"],
         )
-        return ""
+        import time
+        time.sleep(0.5)
+        print(data)
+        return "{}"
 
     team = session["team"]
     since = request.args["since"]

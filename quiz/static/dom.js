@@ -15,7 +15,14 @@ function DomProxy(question, inserted) {
     this._state = new Map();
 
     this._state.set(DOM_INSERTED, inserted);
-    this._state.set(DOM_GUESS_SAVED, question.wip === question.guess);
+
+    if (question.wip === null) {
+        this._state.set(DOM_GUESS_SAVED, true);
+        this._state.set(DOM_GUESS_TEXT, question.guess);
+    } else {
+        this._state.set(DOM_GUESS_SAVED, false);
+        this._state.set(DOM_GUESS_TEXT, question.wip);
+    }
 
     if (question.answer === null) {
         this._state.set(DOM_ANSWER_HIDDEN, true);
@@ -28,7 +35,6 @@ function DomProxy(question, inserted) {
     switch (question.state) {
         case QUESTION_STATE_OPEN:
             this._state.set(DOM_GUESS_DISABLED, false);
-            this._state.set(DOM_GUESS_TEXT, null);
             this._state.set(DOM_SUBMIT_DISABLED, false);
             this._state.set(DOM_SUBMIT_RUNNING, false);
             this._state.set(DOM_DISCARD_DISABLED, false);
@@ -36,7 +42,6 @@ function DomProxy(question, inserted) {
 
         case QUESTION_STATE_EDITING:
             this._state.set(DOM_GUESS_DISABLED, false);
-            this._state.set(DOM_GUESS_TEXT, null);
             this._state.set(DOM_SUBMIT_DISABLED, false);
             this._state.set(DOM_SUBMIT_RUNNING, false);
             this._state.set(DOM_DISCARD_DISABLED, false);
@@ -44,7 +49,6 @@ function DomProxy(question, inserted) {
 
         case QUESTION_STATE_SYNCING:
             this._state.set(DOM_GUESS_DISABLED, true);
-            this._state.set(DOM_GUESS_TEXT, question.wip);
             this._state.set(DOM_SUBMIT_DISABLED, true);
             this._state.set(DOM_SUBMIT_RUNNING, true);
             this._state.set(DOM_DISCARD_DISABLED, true);
@@ -52,7 +56,6 @@ function DomProxy(question, inserted) {
 
         case QUESTION_STATE_LOCKED:
             this._state.set(DOM_GUESS_DISABLED, true);
-            this._state.set(DOM_GUESS_TEXT, question.guess);
             this._state.set(DOM_SUBMIT_DISABLED, true);
             this._state.set(DOM_SUBMIT_RUNNING, false);
             this._state.set(DOM_DISCARD_DISABLED, true);
@@ -62,12 +65,10 @@ function DomProxy(question, inserted) {
 
 
 DomProxy.prototype.calculate_updates = function (prev) {
+    console.log("curr", this);
+    console.log("prev", prev);
     let ops = [];
     for (let [key, val] of this._state) {
-        if (key === DOM_GUESS_TEXT && val === null) {
-            // Never update the guess text while editing is in progress.
-            continue;
-        }
         if (val !== prev._state.get(key)) {
             ops.push({ "kind": key, "data": val });
         }
@@ -209,13 +210,19 @@ function _insert_video(container, media) {
 function _handler_guess_focus(quiz, question) {
     return function (e) {
         const data = {
-            "kind": EVENT_LOCAL_FOCUS,
-            "data": {
-                "question": question.number,
-            },
+            "question": question.number,
         };
-        push(data);
-        quiz.inject_events([data], false);
+
+        push({
+            "kind": EVENT_FOCUS,
+            "data": data,
+        });
+
+        quiz.inject_events([{
+            "kind": EVENT_LOCAL_FOCUS,
+            "data": data,
+        }], true);
+
         e.stopPropagation();
     };
 }
@@ -224,13 +231,19 @@ function _handler_guess_focus(quiz, question) {
 function _handler_guess_blur(quiz, question) {
     return function (e) {
         const data = {
-            "kind": EVENT_LOCAL_BLUR,
-            "data": {
-                "question": question.number,
-            },
+            "question": question.number,
         };
-        push(data);
-        quiz.inject_events([data], false);
+
+        push({
+            "kind": EVENT_BLUR,
+            "data": data,
+        });
+
+        quiz.inject_events([{
+            "kind": EVENT_LOCAL_BLUR,
+            "data": data,
+        }], true);
+
         e.stopPropagation();
     };
 }
@@ -239,13 +252,15 @@ function _handler_guess_blur(quiz, question) {
 function _handler_guess_input(quiz, question) {
     return function (e) {
         const data = {
-            "kind": EVENT_LOCAL_EDIT,
-            "data": {
-                "question": question.number,
-                "guess": e.target.value,
-            },
+            "question": question.number,
+            "guess": e.target.value,
         };
-        quiz.inject_events([data], false);
+
+        quiz.inject_events([{
+            "kind": EVENT_LOCAL_EDIT,
+            "data": data,
+        }], true);
+
         e.stopPropagation();
     };
 }
@@ -254,12 +269,14 @@ function _handler_guess_input(quiz, question) {
 function _handler_discard_click(quiz, question) {
     return function (e) {
         const data = {
-            "kind": EVENT_LOCAL_DISCARD,
-            "data": {
-                "question": question.number,
-            },
+            "question": question.number,
         };
-        quiz.inject_events([data], false);
+
+        quiz.inject_events([{
+            "kind": EVENT_LOCAL_DISCARD,
+            "data": data,
+        }], true);
+
         e.stopPropagation();
     };
 }
@@ -268,14 +285,30 @@ function _handler_discard_click(quiz, question) {
 function _handler_submit_click(quiz, question) {
     return function (e) {
         const data = {
-            "kind": EVENT_LOCAL_SUBMIT_SEND,
-            "data": {
-                "question": question.number,
-                "guess": e.target.value,
-            },
+            "question": question.number,
+            "guess": question.wip !== null ? question.wip : question.guess,
         };
-        push(data);
-        quiz.inject_events([data], false);
+
+        push({
+            "kind": EVENT_GUESS,
+            "data": data,
+        }).then(function () {
+            quiz.inject_events([{
+                "kind": EVENT_LOCAL_SUBMIT_SUCCESS,
+                "data": data,
+            }], true);
+        }).catch(function () {
+            quiz.inject_events([{
+                "kind": EVENT_LOCAL_SUBMIT_FAILURE,
+                "data": data,
+            }], true)
+        });
+
+        quiz.inject_events([{
+            "kind": EVENT_LOCAL_SUBMIT_SEND,
+            "data": data,
+        }], true);
+
         e.stopPropagation();
     };
 }

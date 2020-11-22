@@ -22,17 +22,17 @@ function Quiz(selector) {
 Quiz.prototype.run = function (interval) {
     setInterval(() => {
         poll(this.latest).then(evts => {
-            this.inject_events(evts, true);
+            this.inject_events(evts, false);
         });
     }, interval);
 };
 
 
-Quiz.prototype.inject_events = function (evts, expect_seqnum) {
+Quiz.prototype.inject_events = function (evts, local) {
     for (let evt of evts) {
         console.log(`event: ${JSON.stringify(evt)}`);
         try {
-            if (expect_seqnum) {
+            if (!local) {
                 const seqnum = evt.seqnum;
                 if (!Number.isInteger(seqnum)) {
                     throw "Missing or invalid sequence number";
@@ -78,25 +78,25 @@ Quiz.prototype.handle_event = function (evt) {
 
     switch (evt.kind) {
         // Incoming events.
-        case EVENT_INCOMING_JOIN:
+        case EVENT_JOIN:
             this.handle_incoming_join(evt.data);
             break;
-        case EVENT_INCOMING_ASK:
+        case EVENT_ASK:
             this.handle_incoming_ask(evt.data);
             break;
-        case EVENT_INCOMING_FOCUS:
+        case EVENT_FOCUS:
             this.handle_incoming_focus(evt.data);
             break;
-        case EVENT_INCOMING_BLUR:
+        case EVENT_BLUR:
             this.handle_incoming_blur(evt.data);
             break;
-        case EVENT_INCOMING_GUESS:
+        case EVENT_GUESS:
             this.handle_incoming_guess(evt.data);
             break;
-        case EVENT_INCOMING_LOCK:
+        case EVENT_LOCK:
             this.handle_incoming_lock(evt.data);
             break;
-        case EVENT_INCOMING_REVEAL:
+        case EVENT_REVEAL:
             this.handle_incoming_reveal(evt.data);
             break;
 
@@ -176,6 +176,9 @@ Quiz.prototype.handle_incoming_guess = function (data) {
     }
 
     question.guess = data.guess;
+    if (question.wip === data.guess) {
+        question.wip === null;
+    }
 };
 
 
@@ -193,7 +196,7 @@ Quiz.prototype.handle_incoming_lock = function (data) {
     }
 
     question.state = QUESTION_STATE_LOCKED;
-    question.wip = question.guess;
+    question.wip = null;
 };
 
 
@@ -276,7 +279,11 @@ Quiz.prototype.handle_local_edit = function (data) {
             throw "Not editing";
     }
 
-    question.wip = data.guess;
+    if (data.guess === question.guess) {
+        question.wip = null;
+    } else {
+        question.wip = data.guess;
+    }
 };
 
 
@@ -298,7 +305,7 @@ Quiz.prototype.handle_local_discard = function (data) {
             throw "Editing in progress";
     }
 
-    question.wip = question.guess;
+    question.wip = null;
 };
 
 
