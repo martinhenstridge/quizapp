@@ -25,7 +25,16 @@ div.__answer {
   background-color: #F0F0F0;
 }
 
-span.__saved.edited {
-  color: green;
+div.__saved {
+  margin: 8px 8px 8px 8px;
+}
+
+div.__saved.edited {
   background-color: orange;
+}
+
+div.__cursors {
+  margin: 0px 0px 0px 0px;
+  border: 0px;
+  font-size: x-small;
 }

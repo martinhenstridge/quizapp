@@ -129,7 +129,9 @@ Quiz.prototype.handle_event = function (evt) {
 
 
 Quiz.prototype.handle_incoming_join = function (data) {
-    throw "Not implemented";
+    for (let question of this.questions.values()) {
+        question.cursors.delete(data.player);
+    }
 };
 
 
@@ -152,12 +154,36 @@ Quiz.prototype.handle_incoming_ask = function (data) {
 
 
 Quiz.prototype.handle_incoming_focus = function (data) {
-    throw "Not implemented";
+    if (!Number.isInteger(data.question)) {
+        throw `Missing or invalid question number: ${data.question}`;
+    }
+    if (!this.questions.has(data.question)) {
+        throw `Question not yet asked: ${data.question}`;
+    }
+
+    const question = this.questions.get(data.question);
+    if (question.state === QUESTION_STATE_LOCKED) {
+        throw "Question is locked";
+    }
+
+    question.cursors.add(data.player);
 };
 
 
 Quiz.prototype.handle_incoming_blur = function (data) {
-    throw "Not implemented";
+    if (!Number.isInteger(data.question)) {
+        throw `Missing or invalid question number: ${data.question}`;
+    }
+    if (!this.questions.has(data.question)) {
+        throw `Question not yet asked: ${data.question}`;
+    }
+
+    const question = this.questions.get(data.question);
+    if (question.state === QUESTION_STATE_LOCKED) {
+        throw "Question is locked";
+    }
+
+    question.cursors.delete(data.player);
 };
 
 
@@ -195,6 +221,7 @@ Quiz.prototype.handle_incoming_lock = function (data) {
     }
 
     question.state = QUESTION_STATE_LOCKED;
+    question.cursors.clear();
     question.wip = null;
 };
 

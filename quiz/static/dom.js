@@ -7,8 +7,9 @@ const DOM_GUESS_TEXT       = 404;
 const DOM_SUBMIT_DISABLED  = 405;
 const DOM_SUBMIT_RUNNING   = 406;
 const DOM_DISCARD_DISABLED = 407;
-const DOM_ANSWER_HIDDEN    = 408;
-const DOM_ANSWER_TEXT      = 409;
+const DOM_CURSORS_TEXT     = 408;
+const DOM_ANSWER_HIDDEN    = 409;
+const DOM_ANSWER_TEXT      = 410;
 
 
 function DomNode(quiz, question) {
@@ -24,6 +25,7 @@ function DomNode(quiz, question) {
     const node_saved = node.querySelector(".__saved");
     const node_submit = node.querySelector(".__submit");
     const node_discard = node.querySelector(".__discard");
+    const node_cursors = node.querySelector(".__cursors");
     const node_answer = node.querySelector(".__answer");
 
     // Write the question number, question text and insert any associated media
@@ -56,6 +58,7 @@ function DomNode(quiz, question) {
     this.node_saved = node_saved;
     this.node_submit = node_submit;
     this.node_discard = node_discard;
+    this.node_cursors = node_cursors;
     this.node_answer = node_answer;
     this.state = DomNode.calculate_desired_state(question, true);
 }
@@ -69,6 +72,7 @@ DomNode.calculate_desired_state = function (question, newnode) {
     }
 
     proxy.set(DOM_INSERTED, true);
+    proxy.set(DOM_CURSORS_TEXT, Array.from(question.cursors).sort().join(" | "));
 
     if (question.wip === null) {
         proxy.set(DOM_GUESS_SAVED, true);
@@ -169,6 +173,10 @@ DomNode.prototype.update = function (quiz, question, opkind, opdata) {
 
         case DOM_DISCARD_DISABLED:
             this.node_discard.disabled = opdata;
+            break;
+
+        case DOM_CURSORS_TEXT:
+            this.node_cursors.innerText = opdata;
             break;
 
         case DOM_ANSWER_HIDDEN:
