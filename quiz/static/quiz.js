@@ -13,13 +13,16 @@ function Quiz(selector) {
 Quiz.prototype.run = function (interval) {
     setInterval(() => {
         poll(this.latest).then(evts => {
-            this.inject_events(evts, false);
+            if (evts.length > 0) {
+                this.inject_events(evts, false);
+            }
         });
     }, interval);
 };
 
 
 Quiz.prototype.inject_events = function (evts, local) {
+    const start = new Date();
     for (let evt of evts) {
         console.log(`event: ${JSON.stringify(evt)}`);
         try {
@@ -35,7 +38,10 @@ Quiz.prototype.inject_events = function (evts, local) {
             console.log(`Dropping event: ${exc}`);
         }
     }
+    const finish_int = new Date();
     this.update_dom();
+    const finish_ext = new Date();
+    console.log(`duration: ${finish_int - start}ms + ${finish_ext - finish_int}ms`)
 };
 
 
@@ -52,13 +58,10 @@ Quiz.prototype.update_dom = function () {
         const desired_state = DomNode.calculate_desired_state(question);
         const ops = domnode.calculate_update_ops(desired_state);
         for (let op of ops) {
+            console.log(`update [Q${number}]: ${JSON.stringify(op)}`);
             domnode.update(quiz, question, op.kind, op.data);
         }
         domnode.state = desired_state;
-
-        if (ops.length !== 0) {
-            console.log(`Q${number} updates: ${JSON.stringify(ops)}`);
-        }
     }
 };
 

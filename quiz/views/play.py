@@ -31,9 +31,6 @@ def events(quizid):
             session["team"],
             session["player"],
         )
-        import time
-        time.sleep(0.5)
-        print(data)
         return "{}"
 
     team = session["team"]
