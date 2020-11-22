@@ -11,73 +11,6 @@ const DOM_ANSWER_HIDDEN    = 408;
 const DOM_ANSWER_TEXT      = 409;
 
 
-function DomProxy(question, inserted) {
-    this._state = new Map();
-
-    this._state.set(DOM_INSERTED, inserted);
-
-    if (question.wip === null) {
-        this._state.set(DOM_GUESS_SAVED, true);
-        this._state.set(DOM_GUESS_TEXT, question.guess);
-    } else {
-        this._state.set(DOM_GUESS_SAVED, false);
-        this._state.set(DOM_GUESS_TEXT, question.wip);
-    }
-
-    if (question.answer === null) {
-        this._state.set(DOM_ANSWER_HIDDEN, true);
-        this._state.set(DOM_ANSWER_TEXT, "");
-    } else {
-        this._state.set(DOM_ANSWER_HIDDEN, false);
-        this._state.set(DOM_ANSWER_TEXT, question.answer);
-    }
-
-    switch (question.state) {
-        case QUESTION_STATE_OPEN:
-            this._state.set(DOM_GUESS_DISABLED, false);
-            this._state.set(DOM_SUBMIT_DISABLED, false);
-            this._state.set(DOM_SUBMIT_RUNNING, false);
-            this._state.set(DOM_DISCARD_DISABLED, false);
-            break;
-
-        case QUESTION_STATE_EDITING:
-            this._state.set(DOM_GUESS_DISABLED, false);
-            this._state.set(DOM_SUBMIT_DISABLED, false);
-            this._state.set(DOM_SUBMIT_RUNNING, false);
-            this._state.set(DOM_DISCARD_DISABLED, false);
-            break;
-
-        case QUESTION_STATE_SYNCING:
-            this._state.set(DOM_GUESS_DISABLED, true);
-            this._state.set(DOM_SUBMIT_DISABLED, true);
-            this._state.set(DOM_SUBMIT_RUNNING, true);
-            this._state.set(DOM_DISCARD_DISABLED, true);
-            break;
-
-        case QUESTION_STATE_LOCKED:
-            this._state.set(DOM_GUESS_DISABLED, true);
-            this._state.set(DOM_SUBMIT_DISABLED, true);
-            this._state.set(DOM_SUBMIT_RUNNING, false);
-            this._state.set(DOM_DISCARD_DISABLED, true);
-            break;
-    }
-}
-
-
-DomProxy.prototype.calculate_updates = function (prev) {
-    console.log("curr", this);
-    console.log("prev", prev);
-    let ops = [];
-    for (let [key, val] of this._state) {
-        if (val !== prev._state.get(key)) {
-            ops.push({ "kind": key, "data": val });
-        }
-    }
-    return ops;
-};
-
-//==============================================================================
-
 function DomNode(quiz, question) {
     // Clone question template from HTML.
     const template = document.getElementById("__template");
@@ -124,8 +57,80 @@ function DomNode(quiz, question) {
     this.node_submit = node_submit;
     this.node_discard = node_discard;
     this.node_answer = node_answer;
-    this.domproxy = new DomProxy(question, false);
+    this.state = DomNode.calculate_desired_state(question, true);
 }
+
+
+DomNode.calculate_desired_state = function (question, newnode) {
+    const proxy = new Map();
+
+    if (newnode) {
+        return proxy;
+    }
+
+    proxy.set(DOM_INSERTED, true);
+
+    if (question.wip === null) {
+        proxy.set(DOM_GUESS_SAVED, true);
+        proxy.set(DOM_GUESS_TEXT, question.guess);
+    } else {
+        proxy.set(DOM_GUESS_SAVED, false);
+        proxy.set(DOM_GUESS_TEXT, question.wip);
+    }
+
+    if (question.answer === null) {
+        proxy.set(DOM_ANSWER_HIDDEN, true);
+        proxy.set(DOM_ANSWER_TEXT, "");
+    } else {
+        proxy.set(DOM_ANSWER_HIDDEN, false);
+        proxy.set(DOM_ANSWER_TEXT, question.answer);
+    }
+
+    switch (question.state) {
+        case QUESTION_STATE_OPEN:
+            proxy.set(DOM_GUESS_DISABLED, false);
+            proxy.set(DOM_SUBMIT_DISABLED, false);
+            proxy.set(DOM_SUBMIT_RUNNING, false);
+            proxy.set(DOM_DISCARD_DISABLED, false);
+            break;
+
+        case QUESTION_STATE_EDITING:
+            proxy.set(DOM_GUESS_DISABLED, false);
+            proxy.set(DOM_SUBMIT_DISABLED, false);
+            proxy.set(DOM_SUBMIT_RUNNING, false);
+            proxy.set(DOM_DISCARD_DISABLED, false);
+            break;
+
+        case QUESTION_STATE_SYNCING:
+            proxy.set(DOM_GUESS_DISABLED, true);
+            proxy.set(DOM_SUBMIT_DISABLED, true);
+            proxy.set(DOM_SUBMIT_RUNNING, true);
+            proxy.set(DOM_DISCARD_DISABLED, true);
+            break;
+
+        case QUESTION_STATE_LOCKED:
+            proxy.set(DOM_GUESS_DISABLED, true);
+            proxy.set(DOM_SUBMIT_DISABLED, true);
+            proxy.set(DOM_SUBMIT_RUNNING, false);
+            proxy.set(DOM_DISCARD_DISABLED, true);
+            break;
+    }
+
+    return proxy;
+}
+
+
+DomNode.prototype.calculate_update_ops = function (desired) {
+    let ops = [];
+    for (let [key, val] of desired) {
+        //@@@ ideally avoid any DOM update while in EDITING state
+        //    no harm in current implementation, just wasteful
+        if (val !== this.state.get(key)) {
+            ops.push({ "kind": key, "data": val });
+        }
+    }
+    return ops;
+};
 
 
 DomNode.prototype.update = function (quiz, question, opkind, opdata) {

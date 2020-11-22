@@ -1,14 +1,5 @@
 "use strict";
 
-// Client-local quiz events
-const EVENT_LOCAL_FOCUS          = 151;
-const EVENT_LOCAL_BLUR           = 152;
-const EVENT_LOCAL_EDIT           = 153;
-const EVENT_LOCAL_DISCARD        = 154;
-const EVENT_LOCAL_SUBMIT_SEND    = 155;
-const EVENT_LOCAL_SUBMIT_SUCCESS = 156;
-const EVENT_LOCAL_SUBMIT_FAILURE = 157;
-
 
 function Quiz(selector) {
     this.node = document.querySelector(selector);
@@ -58,15 +49,16 @@ Quiz.prototype.update_dom = function () {
             this.domnodes.set(number, domnode);
         }
 
-        const domproxy = new DomProxy(question, true);
-        const ops = domproxy.calculate_updates(domnode.domproxy);
+        const desired_state = DomNode.calculate_desired_state(question);
+        const ops = domnode.calculate_update_ops(desired_state);
         for (let op of ops) {
             domnode.update(quiz, question, op.kind, op.data);
         }
-        domnode.domproxy = domproxy;
+        domnode.state = desired_state;
 
-        console.log(`Q${number} state: ${JSON.stringify(question)}`);
-        console.log(`Q${number} updates: ${JSON.stringify(ops)}`);
+        if (ops.length !== 0) {
+            console.log(`Q${number} updates: ${JSON.stringify(ops)}`);
+        }
     }
 };
 
@@ -177,7 +169,7 @@ Quiz.prototype.handle_incoming_guess = function (data) {
 
     question.guess = data.guess;
     if (question.wip === data.guess) {
-        question.wip === null;
+        question.wip = null;
     }
 };
 

@@ -8,6 +8,13 @@ const EVENT_BLUR             = 104;
 const EVENT_GUESS            = 105;
 const EVENT_LOCK             = 106;
 const EVENT_REVEAL           = 107;
+const EVENT_LOCAL_FOCUS          = 151;
+const EVENT_LOCAL_BLUR           = 152;
+const EVENT_LOCAL_EDIT           = 153;
+const EVENT_LOCAL_DISCARD        = 154;
+const EVENT_LOCAL_SUBMIT_SEND    = 155;
+const EVENT_LOCAL_SUBMIT_SUCCESS = 156;
+const EVENT_LOCAL_SUBMIT_FAILURE = 157;
 
 // Question states
 const QUESTION_STATE_OPEN    = 201;
