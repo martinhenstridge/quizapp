@@ -294,20 +294,27 @@ function _handler_submit_click(quiz, question) {
             "guess": question.wip !== null ? question.wip : question.guess,
         };
 
+        const _success_fn = quiz.inject_events.bind(
+            quiz,
+            [{
+                "kind": EVENT_LOCAL_SUBMIT_SUCCESS,
+                "data": data,
+            }],
+            true,
+        );
+        const _failure_fn = quiz.inject_events.bind(
+            quiz,
+            [{
+                "kind": EVENT_LOCAL_SUBMIT_FAILURE,
+                "data": data,
+            }],
+            true,
+        );
+
         push({
             "kind": EVENT_GUESS,
             "data": data,
-        }).then(function () {
-            quiz.inject_events([{
-                "kind": EVENT_LOCAL_SUBMIT_SUCCESS,
-                "data": data,
-            }], true);
-        }).catch(function () {
-            quiz.inject_events([{
-                "kind": EVENT_LOCAL_SUBMIT_FAILURE,
-                "data": data,
-            }], true)
-        });
+        }).then(_success_fn, _failure_fn)
 
         quiz.inject_events([{
             "kind": EVENT_LOCAL_SUBMIT_SEND,

@@ -33,8 +33,8 @@
     <script src="{{ url_for('static', filename='dom.js') }}"></script>
     <script src="{{ url_for('static', filename='quiz.js') }}"></script>
     <script>
-      let quiz = new Quiz("#quiz");
-      quiz.run(1000);
+      let quiz = new Quiz("#quiz", 1000);
+      quiz.poll();
     </script>
   </body>
 </html>
