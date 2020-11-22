@@ -16,6 +16,12 @@ def play(quizid):
         dest = url_for("join", quizid=quizid)
         return redirect(dest)
 
+    quiz.add_event(
+        EventKind.JOIN,
+        {},
+        session["team"],
+        session["player"],
+    )
     return render_template("play.html", quizid=quizid, team=team, player=player)
 
 
