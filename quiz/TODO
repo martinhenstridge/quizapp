@@ -1,0 +1,32 @@
+- require password to join team
+  - generate random 6-character string at team creation time
+  - select team, redirect to password entry, redirect to name entry
+  - enter name at same time as password?
+  - only get cookie once through all of the above (cookie includes quizid so not set forever)
+
+- event log on play page
+  - display most events (not focus/blur) in reverse chronological order
+  - hopefully avoid potential confusion over what happened
+  - display dropped events? maybe greyed out?
+
+- cosmetics
+  - spinner in syncing state
+  - freeze top 'Team X (name)' bar at top of window
+    - include list of team members (from join information)?
+  - do something nicer with per-question cursor information
+
+- add missing URL handlers
+  - put something at '/' and '/quiz/'
+  - possibly move '/quiz/<quizid>/play' to just '/quiz/<quizid>/'
+
+- require auth for access to admin?
+  - could generate cookie at quiz creation time
+  - password protect?
+
+- marking page in admin area
+  - display answers for each team
+  - exact match to canonical answer is automatically correct
+  - add non-canonical answers manually, automatically propagate
+  - how to handle number of marks? store map of answer:marks?
+
+- automatically read out answers when asked?
