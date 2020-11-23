@@ -50,8 +50,9 @@ function DomNode(quiz, question) {
     node_guess.addEventListener("focus", _handler_guess_focus(quiz, question));
     node_guess.addEventListener("blur", _handler_guess_blur(quiz, question));
     node_guess.addEventListener("input", _handler_guess_input(quiz, question));
-    node_discard.addEventListener("click", _handler_discard_click(quiz, question));
+    node_guess.addEventListener("keyup", _handler_guess_enter(quiz, question));
     node_submit.addEventListener("click", _handler_submit_click(quiz, question));
+    node_discard.addEventListener("click", _handler_discard_click(quiz, question));
 
     this.node = node;
     this.node_guess = node_guess;
@@ -279,6 +280,25 @@ function _handler_guess_input(quiz, question) {
 }
 
 
+function _handler_guess_enter(quiz, question) {
+    return function (e) {
+        if (e.key === "Enter") {
+            e.target.blur();
+            _submit_guess(quiz, question);
+            e.stopPropagation();
+        }
+    };
+}
+
+
+function _handler_submit_click(quiz, question) {
+    return function (e) {
+        _submit_guess(quiz, question);
+        e.stopPropagation();
+    };
+}
+
+
 function _handler_discard_click(quiz, question) {
     return function (e) {
         const data = {
@@ -295,40 +315,36 @@ function _handler_discard_click(quiz, question) {
 }
 
 
-function _handler_submit_click(quiz, question) {
-    return function (e) {
-        const data = {
-            "question": question.number,
-            "guess": question.wip !== null ? question.wip : question.guess,
-        };
-
-        const _success_fn = quiz.inject_events.bind(
-            quiz,
-            [{
-                "kind": EVENT_LOCAL_SUBMIT_SUCCESS,
-                "data": data,
-            }],
-            true,
-        );
-        const _failure_fn = quiz.inject_events.bind(
-            quiz,
-            [{
-                "kind": EVENT_LOCAL_SUBMIT_FAILURE,
-                "data": data,
-            }],
-            true,
-        );
-
-        push({
-            "kind": EVENT_GUESS,
-            "data": data,
-        }).then(_success_fn, _failure_fn)
-
-        quiz.inject_events([{
-            "kind": EVENT_LOCAL_SUBMIT_SEND,
-            "data": data,
-        }], true);
-
-        e.stopPropagation();
+function _submit_guess(quiz, question) {
+    const data = {
+        "question": question.number,
+        "guess": question.wip !== null ? question.wip : question.guess,
     };
+
+    const _success_fn = quiz.inject_events.bind(
+        quiz,
+        [{
+            "kind": EVENT_LOCAL_SUBMIT_SUCCESS,
+            "data": data,
+        }],
+        true,
+    );
+    const _failure_fn = quiz.inject_events.bind(
+        quiz,
+        [{
+            "kind": EVENT_LOCAL_SUBMIT_FAILURE,
+            "data": data,
+        }],
+        true,
+    );
+
+    push({
+        "kind": EVENT_GUESS,
+        "data": data,
+    }).then(_success_fn, _failure_fn)
+
+    quiz.inject_events([{
+        "kind": EVENT_LOCAL_SUBMIT_SEND,
+        "data": data,
+    }], true);
 }
