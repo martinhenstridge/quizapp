@@ -13,6 +13,10 @@
   - put something at '/' and '/quiz/'
   - possibly move '/quiz/<quizid>/play' to just '/quiz/<quizid>/'
 
+- validate incoming user events
+  - check contents (on both client and server)
+  - only admin should post ask/lock/reveal events
+
 - require auth for access to admin?
   - could generate cookie at quiz creation time
   - password protect?
@@ -22,5 +26,9 @@
   - exact match to canonical answer is automatically correct
   - add non-canonical answers manually, automatically propagate
   - how to handle number of marks? store map of answer:marks?
+
+- view-as-team page in admin area
+  - read-only version of play page
+  - observe team activity in real-time
 
 - automatically read out answers when asked?
