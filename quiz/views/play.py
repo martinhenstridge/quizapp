@@ -8,39 +8,48 @@ from .. import app
 def play(quizid):
     quiz = Quiz.get(quizid)
 
-    team = session.get("team")
-    player = session.get("player")
+    session_quizid = session.get("quizid")
+    session_team = session.get("team")
+    session_player = session.get("player")
 
-    # Unidentified player, redirect to join page.
-    if player is None or team is None:
+    # Invalid or missing cookie. Redirect to 'join' page.
+    if session_quizid != quizid or session_team is None or session_player is None:
         dest = url_for("join", quizid=quizid)
         return redirect(dest)
 
     quiz.add_event(
         EventKind.JOIN,
         {},
-        session["team"],
-        session["player"],
+        session_team,
+        session_player,
     )
-    return render_template("play.html", quizid=quizid, team=team, player=player)
+    return render_template(
+        "play.html", quizid=quizid, team=session_team, player=session_player
+    )
 
 
 @app.route("/<quizid>/play/events", methods=["GET", "POST"])
 def events(quizid):
     quiz = Quiz.get(quizid)
 
+    session_quizid = session.get("quizid")
+    session_team = session.get("team")
+    session_player = session.get("player")
+
+    # Invalid or missing cookie. Return 401 - Unauthorized.
+    if session_quizid != quizid or session_team is None or session_player is None:
+        return jsonify("Session credentials do not match current quiz"), 401
+
     if request.method == "POST":
         data = request.json
         quiz.add_event(
             EventKind(data["kind"]),
             data["data"],
-            session["team"],
-            session["player"],
+            session_team,
+            session_player,
         )
-        return "{}"
+        return jsonify({})
 
-    team = session["team"]
     since = request.args["since"]
-
-    events = quiz.get_events_since(team, since)
+    events = quiz.get_events_since(session_team, since)
     return jsonify(events)

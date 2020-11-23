@@ -92,7 +92,9 @@ class Quiz:
     @property
     def teams(self) -> List[Tuple[str, str, str]]:
         with self.conn as conn:
-            cur = conn.execute("SELECT number, password, notes FROM teams WHERE number != 0")
+            cur = conn.execute(
+                "SELECT number, password, notes FROM teams WHERE number != 0"
+            )
             return cur.fetchall()
 
     def add_team(self, notes: str, password: str) -> None:
@@ -107,6 +109,23 @@ class Quiz:
             """,
                 (password, notes),
             )
+
+    def check_team_password(self, number: int, password: str) -> bool:
+        with self.conn as conn:
+            cur = conn.execute(
+                """
+                SELECT
+                  1
+                FROM
+                  teams
+                WHERE
+                  number = ? AND password = ?
+                LIMIT
+                  1
+                """,
+                (number, password),
+            )
+            return cur.fetchone() is not None
 
     def update_team(self, number: int, notes: str) -> None:
         with self.conn as conn:
