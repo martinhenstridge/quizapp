@@ -58,9 +58,10 @@ class Quiz:
                 -- Table: teams
                 CREATE TABLE IF NOT EXISTS teams (
                   number INTEGER PRIMARY KEY,
+                  password TEXT NOT NULL,
                   notes TEXT NOT NULL
                 );
-                INSERT INTO teams(number, notes) VALUES (0, "");
+                INSERT INTO teams(number, password, notes) VALUES (0, "......", "");
 
                 -- Table: questions
                 CREATE TABLE IF NOT EXISTS questions (
@@ -89,14 +90,23 @@ class Quiz:
         return cls(quizid, dbfile, assets, conn)
 
     @property
-    def teams(self) -> List[Tuple[str, str]]:
+    def teams(self) -> List[Tuple[str, str, str]]:
         with self.conn as conn:
-            cur = conn.execute("SELECT number, notes FROM teams WHERE number != 0")
+            cur = conn.execute("SELECT number, password, notes FROM teams WHERE number != 0")
             return cur.fetchall()
 
-    def add_team(self, notes: str) -> None:
+    def add_team(self, notes: str, password: str) -> None:
         with self.conn as conn:
-            conn.execute("INSERT INTO teams(notes) VALUES (?)", (notes,))
+            conn.execute(
+                """
+                INSERT INTO
+                  teams (
+                    password,
+                    notes)
+                VALUES (?, ?)
+            """,
+                (password, notes),
+            )
 
     def update_team(self, number: int, notes: str) -> None:
         with self.conn as conn:

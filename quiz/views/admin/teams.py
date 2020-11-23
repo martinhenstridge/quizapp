@@ -1,3 +1,5 @@
+import string
+import random
 from flask import redirect, render_template, request, url_for
 from ...quiz import Quiz
 from ... import app
@@ -14,7 +16,7 @@ def _teams_add(quizid):
     notes = request.form["notes"]
 
     quiz = Quiz.get(quizid)
-    quiz.add_team(notes)
+    quiz.add_team(notes, "".join(random.choices(string.ascii_uppercase, k=6)))
 
     dest = url_for("edit_teams", quizid=quizid)
     return redirect(dest)
