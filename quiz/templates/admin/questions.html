@@ -75,19 +75,19 @@
             </form>
           </td>
           <td>
-            {% if question.kind.value == 0 %}
-            {% elif question.kind.value == 1 %}
+            {% if question.kind.value == 301 %}
+            {% elif question.kind.value == 302 %}
             <img
               src="{{ url_for('assets', quizid=quizid, filename=question.filename) }}"
               width="100px">
-            {% elif question.kind.value == 2 %}
+            {% elif question.kind.value == 303 %}
             <audio
               src="{{ url_for('assets', quizid=quizid, filename=question.filename) }}"
               type="{{ question.mimetype  }}"
               controls>
               Your browser does not support the <code>audio</code> element.
             </audio>
-            {% elif question.kind.value == 3 %}
+            {% elif question.kind.value == 304 %}
             <video
               src="{{ url_for('assets', quizid=quizid, filename=question.filename) }}"
               type="{{ question.mimetype  }}"
