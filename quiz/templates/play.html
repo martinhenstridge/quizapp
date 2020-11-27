@@ -7,8 +7,9 @@
   </head>
   <body>
     <h1>Team {{ team }} ({{ player }})</h1>
-    <div id="quiz"></div>
-    <template id="__template">
+    <div id="questions"></div>
+    <div id="eventlog"></div>
+    <template id="__template_question">
       <div class="question">
         <div>
           <div class="__number"></div>
@@ -29,13 +30,19 @@
         </div>
       </div>
     </template>
+    <template id="__template_eventlog">
+      <div class="logentry">
+        <span class="__timestamp"></span>
+        <span class="__logentry"></span>
+      </div>
+    </template>
     <script src="{{ url_for('static', filename='constants.js') }}"></script>
     <script src="{{ url_for('static', filename='question.js') }}"></script>
     <script src="{{ url_for('static', filename='comms.js') }}"></script>
     <script src="{{ url_for('static', filename='dom.js') }}"></script>
     <script src="{{ url_for('static', filename='quiz.js') }}"></script>
     <script>
-      let quiz = new Quiz("#quiz", 1000);
+      let quiz = new Quiz("#questions", "#eventlog", 1000);
       quiz.poll();
     </script>
   </body>

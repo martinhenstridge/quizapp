@@ -13,6 +13,15 @@ div.question {
   margin: 8px 0px 8px 0px;
 }
 
+div.logentry {
+  font-family: monospace;
+  font-size: small;
+}
+
+div.logentry.inactive {
+  background-color: #F0F0F0;
+}
+
 div.__number {
   margin: 0px 8px 0px 8px;
 }

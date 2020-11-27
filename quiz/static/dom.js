@@ -12,9 +12,52 @@ const DOM_ANSWER_HIDDEN    = 409;
 const DOM_ANSWER_TEXT      = 410;
 
 
-function DomNode(quiz, question) {
+function EventLogNode(evt, active) {
     // Clone question template from HTML.
-    const template = document.getElementById("__template");
+    const template = document.getElementById("__template_eventlog");
+    const node = template.content.firstElementChild.cloneNode(true);
+
+    // Lookup interesting children.
+    const node_timestamp = node.querySelector(".__timestamp");
+    const node_logentry = node.querySelector(".__logentry");
+
+    let msg;
+    switch (evt.kind) {
+        case EVENT_JOIN:
+            msg = `${evt.data.player} joined`;
+            break;
+        case EVENT_ASK:
+            msg = `Q${evt.data.question} asked`;
+            break;
+        case EVENT_GUESS:
+            msg = `${evt.data.player} guessed Q${evt.data.question}: ${evt.data.guess}`;
+            break;
+        case EVENT_LOCK:
+            msg = `Q${evt.data.question} locked`;
+            break;
+        case EVENT_REVEAL:
+            msg = `Q${evt.data.question} revealed: ${evt.data.answer}`;
+            break;
+    }
+
+    node_timestamp.innerText = `[${evt.timestamp}]`;
+    node_logentry.innerText = msg;
+    if (!active) {
+        node.classList.add("inactive");
+    }
+
+    this.node = node;
+}
+
+
+EventLogNode.prototype.insert = function (container) {
+    container.prepend(this.node);
+};
+
+
+function QuestionNode(quiz, question) {
+    // Clone question template from HTML.
+    const template = document.getElementById("__template_question");
     const node = template.content.firstElementChild.cloneNode(true);
 
     // Lookup interesting children.
@@ -36,13 +79,13 @@ function DomNode(quiz, question) {
         case QUESTION_KIND_TEXT:
             break;
         case QUESTION_KIND_IMAGE:
-            _insert_image(node_media, media);
+            _insert_image(node_media, question.media);
             break;
         case QUESTION_KIND_AUDIO:
-            _insert_audio(node_media, media);
+            _insert_audio(node_media, question.media);
             break;
         case QUESTION_KIND_VIDEO:
-            _insert_video(node_media, media);
+            _insert_video(node_media, question.media);
             break;
     }
 
@@ -61,11 +104,11 @@ function DomNode(quiz, question) {
     this.node_discard = node_discard;
     this.node_cursors = node_cursors;
     this.node_answer = node_answer;
-    this.state = DomNode.calculate_desired_state(question, true);
+    this.state = QuestionNode.calculate_desired_state(question, true);
 }
 
 
-DomNode.calculate_desired_state = function (question, newnode) {
+QuestionNode.calculate_desired_state = function (question, newnode) {
     const proxy = new Map();
 
     if (newnode) {
@@ -125,7 +168,7 @@ DomNode.calculate_desired_state = function (question, newnode) {
 }
 
 
-DomNode.prototype.calculate_update_ops = function (desired) {
+QuestionNode.prototype.calculate_update_ops = function (desired) {
     let ops = [];
     for (let [key, val] of desired) {
         //@@@ ideally avoid any DOM update while in EDITING state
@@ -138,11 +181,11 @@ DomNode.prototype.calculate_update_ops = function (desired) {
 };
 
 
-DomNode.prototype.update = function (quiz, question, opkind, opdata) {
+QuestionNode.prototype.update = function (quiz, question, opkind, opdata) {
     switch (opkind) {
         case DOM_INSERTED:
             if (opdata) {
-                quiz.node.appendChild(this.node);
+                quiz.questions_container.appendChild(this.node);
             } else {
                 // Impossible
             }
