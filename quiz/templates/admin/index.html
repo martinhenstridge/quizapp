@@ -2,11 +2,11 @@
 <html lang="en">
   <head>
     <meta charset="utf-8" />
-    <title>quiz|{{ quizid }}|admin</title>
+    <title>quiz|admin</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='admin.css') }}">
   </head>
   <body>
-    <h1>Quiz admin: {{ quizid }}</h1>
+    <h1>[{{ quizid }}] Quiz admin</h1>
     <ul>
       <li><a href="{{ url_for('admin', quizid=quizid) }}">Admin home</a></li>
       <li><a href="{{ url_for('edit_teams', quizid=quizid) }}">Edit teams</a></li>
