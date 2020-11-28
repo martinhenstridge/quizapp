@@ -67,7 +67,6 @@ function QuestionNode(quiz, question) {
     const node_guess = node.querySelector(".__guess");
     const node_saved = node.querySelector(".__saved");
     const node_submit = node.querySelector(".__submit");
-    const node_icon = node.querySelector(".__icon");
     const node_discard = node.querySelector(".__discard");
     const node_cursors = node.querySelector(".__cursors");
     const node_answer = node.querySelector(".__answer");
@@ -90,6 +89,11 @@ function QuestionNode(quiz, question) {
             break;
     }
 
+    const icon_submit = _clone_icon("__template_icon_submit");
+    const icon_discard = _clone_icon("__template_icon_discard");
+    node_submit.appendChild(icon_submit);
+    node_discard.appendChild(icon_discard);
+
     // Add event listeners.
     node_guess.addEventListener("focus", _handler_guess_focus(quiz, question));
     node_guess.addEventListener("blur", _handler_guess_blur(quiz, question));
@@ -102,10 +106,10 @@ function QuestionNode(quiz, question) {
     this.node_guess = node_guess;
     this.node_saved = node_saved;
     this.node_submit = node_submit;
-    this.node_icon = node_icon;
     this.node_discard = node_discard;
     this.node_cursors = node_cursors;
     this.node_answer = node_answer;
+    this.node_icon = icon_submit;
     this.state = QuestionNode.calculate_desired_state(question, true);
 }
 
@@ -217,6 +221,7 @@ QuestionNode.prototype.update = function (quiz, question, opkind, opdata) {
             let icon;
             if (opdata) {
                 icon = _clone_icon("__template_icon_arrows");
+                icon.classList.add("spinning");
             } else {
                 icon = _clone_icon("__template_icon_submit");
             }

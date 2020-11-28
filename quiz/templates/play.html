@@ -3,7 +3,7 @@
   <head>
     <meta charset="utf-8" />
     <title>quiz|play</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='play.css') }}?62">
+    <link rel="stylesheet" href="{{ url_for('static', filename='play.css') }}">
   </head>
   <body>
     <div id="quiz">
@@ -25,16 +25,8 @@
           <div class="__media"></div>
           <div>
             <input class="__guess" type="text">
-            <button class="__submit">
-              <svg width="16" height="16" fill="currentColor" class="__icon">
-                <use href="{{ url_for('static', filename='icons.svg') }}#__icon_submit" />
-              </svg>
-            </button>
-            <button class="__discard">
-              <svg width="16" height="16" fill="currentColor">
-                <use href="{{ url_for('static', filename='icons.svg') }}#__icon_discard" />
-              </svg>
-            </button>
+            <button class="__submit"></button>
+            <button class="__discard"></button>
           </div>
           <div class="__cursors"></div>
           <div class="__answer" hidden></div>
@@ -43,9 +35,9 @@
     </template>
     <template id="__template_eventlog">
       <div class="logentry">
+        <hr>
         <span class="__timestamp"></span>
         <span class="__logentry"></span>
-        <hr style="height:1px;border-width:0;background-color:#E0E0E0;">
       </div>
     </template>
     <template id="__template_icon_submit">
@@ -56,6 +48,11 @@
     <template id="__template_icon_arrows">
       <svg width="16" height="16" fill="currentColor">
         <use href="{{ url_for('static', filename='icons.svg') }}#__icon_arrows" />
+      </svg>
+    </template>
+    <template id="__template_icon_discard">
+      <svg width="16" height="16" fill="currentColor">
+        <use href="{{ url_for('static', filename='icons.svg') }}#__icon_discard" />
       </svg>
     </template>
     <script src="{{ url_for('static', filename='constants.js') }}"></script>
