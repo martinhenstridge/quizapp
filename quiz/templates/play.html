@@ -6,9 +6,11 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='play.css') }}">
   </head>
   <body>
-    <h1>Team {{ team }} ({{ player }})</h1>
-    <div id="questions"></div>
-    <div id="eventlog"></div>
+    <div id="quiz">
+      <h1>Team {{ team }} ({{ player }})</h1>
+      <div id="questions"></div>
+      <div id="eventlog"></div>
+    </div>
     <template id="__template_question">
       <div class="question">
         <div>
