@@ -10,6 +10,12 @@ div {
   height: 100%;
 }
 
+hr {
+  height: 2px;
+  border-width: 0px;
+  background-color: #007bff;
+}
+
 #questions {
   float: left;
   width: 70%;
@@ -18,8 +24,8 @@ div {
 }
 
 #questions input {
-  height: 16px;
-  width: 200px;
+  height: 2em;
+  width: 32em;
 }
 
 #eventlog {
@@ -37,9 +43,10 @@ div {
 
 div.question {
   display: flex;
-  border: 2px solid #82b74b;
+  border: 2px solid #007bff;;
   border-radius: 8px;
   margin: 0px 8px 8px 0px;
+  background-color: #f8f9fa;
 }
 
 div.logentry {
@@ -56,12 +63,8 @@ div.__number {
   margin: 0px 8px 0px 8px;
 }
 
-div.__answer {
-  border-width: 1px;
-  border-radius: 8px;
-  padding: 8px;
-  border: 2px solid #F49F0A;
-  background-color: #F0F0F0;
+span.__answer {
+  font-weight: bold;
 }
 
 div.__saved {
@@ -69,7 +72,7 @@ div.__saved {
 }
 
 div.__saved.edited {
-  background-color: orange;
+  background-color: #ffc107;
 }
 
 div.__cursors {
@@ -100,7 +103,7 @@ button.__submit {
 
 button.__submit:disabled {
   color: white;
-  background-color: #e0e0e0;
+  background-color: #e2e3e5;
 }
 
 button.__discard {
@@ -110,7 +113,7 @@ button.__discard {
 
 button.__discard:disabled {
   color: white;
-  background-color: #e0e0e0;
+  background-color: #e2e3e5;
 }
 
 .spinning {

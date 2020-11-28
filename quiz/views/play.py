@@ -48,8 +48,6 @@ def events(quizid):
             session_team,
             session_player,
         )
-        import time
-        time.sleep(5)
         return jsonify({})
 
     since = request.args["since"]

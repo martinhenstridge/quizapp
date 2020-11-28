@@ -137,7 +137,7 @@ QuestionNode.calculate_desired_state = function (question, newnode) {
         proxy.set(DOM_ANSWER_TEXT, "");
     } else {
         proxy.set(DOM_ANSWER_HIDDEN, false);
-        proxy.set(DOM_ANSWER_TEXT, question.answer);
+        proxy.set(DOM_ANSWER_TEXT, `Answer: ${question.answer}`);
     }
 
     switch (question.state) {
