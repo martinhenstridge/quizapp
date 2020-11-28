@@ -40,7 +40,7 @@ function EventLogNode(evt, active) {
             break;
     }
 
-    node_timestamp.innerText = `[${evt.timestamp}]`;
+    node_timestamp.innerText = `[${evt.timestamp.split(" ")[1]}]`;
     node_logentry.innerText = msg;
     if (!active) {
         node.classList.add("inactive");

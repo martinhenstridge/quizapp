@@ -12,14 +12,14 @@ div {
 
 #questions {
   float: left;
-  width: 60%;
+  width: 70%;
   height: 100%;
   overflow: scroll;
 }
 
 #eventlog {
   float: left;
-  width: 40%;
+  width: 30%;
   height: 100%;
   overflow: scroll;
 }
@@ -28,12 +28,13 @@ div.question {
   display: flex;
   border: 2px solid #82b74b;
   border-radius: 8px;
-  margin: 8px 0px 8px 0px;
+  margin: 0px 8px 8px 0px;
 }
 
 div.logentry {
   font-family: monospace;
   font-size: small;
+  margin: 4px;
 }
 
 div.logentry.inactive {
