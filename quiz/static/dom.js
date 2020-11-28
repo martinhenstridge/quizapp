@@ -67,6 +67,7 @@ function QuestionNode(quiz, question) {
     const node_guess = node.querySelector(".__guess");
     const node_saved = node.querySelector(".__saved");
     const node_submit = node.querySelector(".__submit");
+    const node_icon = node.querySelector(".__icon");
     const node_discard = node.querySelector(".__discard");
     const node_cursors = node.querySelector(".__cursors");
     const node_answer = node.querySelector(".__answer");
@@ -101,6 +102,7 @@ function QuestionNode(quiz, question) {
     this.node_guess = node_guess;
     this.node_saved = node_saved;
     this.node_submit = node_submit;
+    this.node_icon = node_icon;
     this.node_discard = node_discard;
     this.node_cursors = node_cursors;
     this.node_answer = node_answer;
@@ -212,7 +214,14 @@ QuestionNode.prototype.update = function (quiz, question, opkind, opdata) {
             break;
 
         case DOM_SUBMIT_RUNNING:
-            this.node_submit.innerText = opdata ? "..." : "Submit";
+            let icon;
+            if (opdata) {
+                icon = _clone_icon("__template_icon_arrows");
+            } else {
+                icon = _clone_icon("__template_icon_submit");
+            }
+            this.node_icon.replaceWith(icon);
+            this.node_icon = icon;
             break;
 
         case DOM_DISCARD_DISABLED:
@@ -261,6 +270,12 @@ function _insert_video(container, media) {
     video.width = "200";
     video.controls = true;
     container.appendChild(video);
+}
+
+
+function _clone_icon(which) {
+    const template = document.getElementById(which);
+    return template.content.firstElementChild.cloneNode(true);
 }
 
 
