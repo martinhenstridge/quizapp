@@ -17,6 +17,11 @@ div {
   overflow: scroll;
 }
 
+#questions input {
+  height: 16px;
+  width: 200px;
+}
+
 #eventlog {
   float: left;
   width: 30%;
