@@ -27,16 +27,16 @@ function EventLogNode(evt, active) {
             msg = `${evt.data.player} joined`;
             break;
         case EVENT_ASK:
-            msg = `Q${evt.data.question} asked`;
+            msg = `Q${evt.data.question} - asked`;
             break;
         case EVENT_GUESS:
-            msg = `${evt.data.player} guessed Q${evt.data.question}: ${evt.data.guess}`;
+            msg = `Q${evt.data.question} - ${evt.data.player} guessed: ${evt.data.guess}`;
             break;
         case EVENT_LOCK:
-            msg = `Q${evt.data.question} locked`;
+            msg = `Q${evt.data.question} - locked`;
             break;
         case EVENT_REVEAL:
-            msg = `Q${evt.data.question} revealed: ${evt.data.answer}`;
+            msg = `Q${evt.data.question} - revealed: ${evt.data.answer}`;
             break;
     }
 
