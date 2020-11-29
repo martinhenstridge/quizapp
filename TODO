@@ -1,12 +1,8 @@
 - event log on play page
-  - display most events (not focus/blur) in reverse chronological order
-  - hopefully avoid potential confusion over what happened
   - display dropped events? maybe greyed out?
 
 - cosmetics
-  - spinner in syncing state
-  - freeze top 'Team X (name)' bar at top of window
-    - include list of team members (from join information)?
+  - include list of team members (from join information)?
   - do something nicer with per-question cursor information
 
 - add missing URL handlers
