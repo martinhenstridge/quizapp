@@ -82,7 +82,7 @@ button {
   height: 24px;
   width: 24px;
   margin: 0px;
-  padding: 4px;
+  padding: 0px;
   vertical-align: middle;
   line-height: 1.5;
   border-radius: .25rem;
@@ -94,23 +94,23 @@ button:not(:disabled) {
 }
 
 button.__submit {
-  color: white;
-  background-color: #28a745;
+  color: #28a745;
+  background-color: transparent;
 }
 
 button.__submit:disabled {
-  color: white;
-  background-color: #e2e3e5;
+  color: #e2e3e5;
+  background-color: transparent;
 }
 
 button.__discard {
-  color: white;
-  background-color: #dc3545;
+  color: #dc3545;
+  background-color: transparent;
 }
 
 button.__discard:disabled {
-  color: white;
-  background-color: #e2e3e5;
+  color: #e2e3e5;
+  background-color: transparent;
 }
 
 .spinning {
