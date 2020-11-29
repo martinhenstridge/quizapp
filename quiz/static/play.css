@@ -13,7 +13,7 @@ div {
 hr {
   height: 2px;
   border-width: 0px;
-  background-color: #007bff;
+  background-color: #000000;
 }
 
 #questions {
@@ -43,10 +43,7 @@ hr {
 
 div.question {
   display: flex;
-  border: 2px solid #007bff;;
-  border-radius: 8px;
   margin: 0px 8px 8px 0px;
-  background-color: #f8f9fa;
 }
 
 div.logentry {

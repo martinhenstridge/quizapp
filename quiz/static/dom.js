@@ -15,7 +15,7 @@ const DOM_ANSWER_TEXT      = 410;
 function EventLogNode(evt, active) {
     // Clone question template from HTML.
     const template = document.getElementById("__template_eventlog");
-    const node = template.content.firstElementChild.cloneNode(true);
+    const node = template.content.cloneNode(true);
 
     // Lookup interesting children.
     const node_timestamp = node.querySelector(".__timestamp");
@@ -58,7 +58,7 @@ EventLogNode.prototype.insert = function (container) {
 function QuestionNode(quiz, question) {
     // Clone question template from HTML.
     const template = document.getElementById("__template_question");
-    const node = template.content.firstElementChild.cloneNode(true);
+    const node = template.content.cloneNode(true);
 
     // Lookup interesting children.
     const node_number = node.querySelector(".__number");
